@@ -26,7 +26,6 @@ import me.mrCookieSlime.Slimefun.api.inventory.BlockMenu;
 import me.mrCookieSlime.Slimefun.api.inventory.BlockMenuPreset;
 import me.mrCookieSlime.Slimefun.api.item_transport.ItemTransportFlow;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -257,7 +256,9 @@ public abstract class SCAGenerator extends AbstractEnergyProvider implements Mac
      * @return This method will return the current instance of {@link SCAGenerator}, so that can be chained.
      */
     public final SCAGenerator setCapacity(int capacity) {
-        Validate.isTrue(capacity >= 0, "The capacity cannot be negative!");
+        if (capacity < 0) {
+            throw new IllegalArgumentException("The capacity cannot be negative!");
+        }
 
         if (getState() == ItemState.UNREGISTERED) {
             this.energyCapacity = capacity;
@@ -276,7 +277,9 @@ public abstract class SCAGenerator extends AbstractEnergyProvider implements Mac
      * @return This method will return the current instance of {@link SCAGenerator}, so that can be chained.
      */
     public final SCAGenerator setEnergyProduction(int energyProduced) {
-        Validate.isTrue(energyProduced > 0, "The energy production must be greater than zero!");
+        if (energyProduced <= 0) {
+            throw new IllegalArgumentException("The energy production must be greater than zero!");
+        }
 
         this.energyProducedPerTick = energyProduced;
         return this;
