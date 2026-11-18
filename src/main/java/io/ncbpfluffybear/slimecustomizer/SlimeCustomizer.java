@@ -13,7 +13,6 @@ import io.ncbpfluffybear.slimecustomizer.registration.Items;
 import io.ncbpfluffybear.slimecustomizer.registration.Machines;
 import io.ncbpfluffybear.slimecustomizer.registration.MobDrops;
 import io.ncbpfluffybear.slimecustomizer.registration.SolarGenerators;
-import lombok.SneakyThrows;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.config.Config;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack;
@@ -123,7 +122,6 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
         Bukkit.getPluginManager().registerEvents(new Events(), instance);
     }
 
-    @SneakyThrows
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
@@ -142,8 +140,15 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
                 itemFile = new File(getInstance().getDataFolder().getPath() + "/saveditems", id + ".yml");
             }
 
-            if (!itemFile.createNewFile()) {
-                getInstance().getLogger().log(Level.SEVERE, "Failed to create config for item " + id);
+            try {
+                if (!itemFile.createNewFile()) {
+                    Utils.send(p, "&cFailed to create saved item " + id + ". Check the server logs.");
+                    return true;
+                }
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "Failed to create config for saved item " + id, e);
+                Utils.send(p, "&cCould not save this item. Ask an administrator to check the log.");
+                return true;
             }
 
             Config itemFileConfig = new Config(this, "saveditems/" + id + ".yml");
