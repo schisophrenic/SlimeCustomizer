@@ -1,6 +1,5 @@
 package io.ncbpfluffybear.slimecustomizer.objects;
 
-import dev.j3fftw.extrautils.utils.LoreBuilderDynamic;
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.ncbpfluffybear.slimecustomizer.Utils;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
@@ -109,8 +108,8 @@ public class SCMachine {
         List<String> itemLore = Utils.colorList(Stream.concat(
             config.getStringList(key + "." + machineType + "-lore").stream(),
             new ArrayList<>(Arrays.asList("", getMachineTag(),
-                LoreBuilderDynamic.powerBuffer(energyBuffer),
-                LoreBuilderDynamic.powerPerTick(getEnergyExchange()))).stream()
+                Utils.powerBuffer(energyBuffer),
+                Utils.powerPerTick(getEnergyExchange()))).stream()
         ).collect(Collectors.toList()));
 
         // Two types of tempStacks for and without skull textures

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "minimum_minecraft": "1.21.11",
+  "minimum_java": 21,
+  "accepted_platform_families": [
+    "PAPER",
+    "PURPUR"
+  ],
+  "required_plugins": [
+    "Slimefun"
+  ],
+  "notes": "SlimeCustomizer compatibility candidate for Slimefun-Legacy 4.1.80; Paper/Purpur 26.3 needs Java 25. Runtime gameplay testing is pending."
+}

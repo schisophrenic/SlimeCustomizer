@@ -1,6 +1,5 @@
 package io.ncbpfluffybear.slimecustomizer.registration;
 
-import dev.j3fftw.extrautils.utils.LoreBuilderDynamic;
 import io.ncbpfluffybear.slimecustomizer.SlimeCustomizer;
 import io.ncbpfluffybear.slimecustomizer.Utils;
 import io.ncbpfluffybear.slimecustomizer.objects.CustomSolarGenerator;
@@ -79,8 +78,8 @@ public class SolarGenerators {
             List<String> itemLore = Utils.colorList(Stream.concat(
                 generators.getStringList(generatorKey + "." + "generator-lore").stream(),
                 new ArrayList<>(Arrays.asList("", "&eSolar Generator",
-                    LoreBuilderDynamic.powerPerTick(dayEnergy) + " &7(Day)",
-                    LoreBuilderDynamic.powerPerTick(nightEnergy) + " &7(Night)"
+                    Utils.powerPerTick(dayEnergy) + " &7(Day)",
+                    Utils.powerPerTick(nightEnergy) + " &7(Night)"
                 )).stream()
             ).collect(Collectors.toList()));
 

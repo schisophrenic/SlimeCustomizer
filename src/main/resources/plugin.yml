@@ -11,7 +11,7 @@ description: A Slimefun4 addon that allows the creation of items through simple 
 main: io.ncbpfluffybear.slimecustomizer.SlimeCustomizer
 
 ## You can change this to link to your website or repository. You can also remove this line if you want to.
-website: https://github.com/NCBPFluffyBear/SlimeCustomizer
+website: https://github.com/schisophrenic/SlimeCustomizer
 
 ## This is required and marks Slimefun as a plugin dependency.
 depend: [Slimefun]
@@ -79,7 +79,7 @@ softdepend:
 version: ${project.version}
 
 ## This is the minimum minecraft version required to run your plugin.
-api-version: 1.16
+api-version: '1.21.11'
 
 commands:
   slimecustomizer:

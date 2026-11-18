@@ -4,7 +4,6 @@ import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
 import io.github.thebusybiscuit.slimefun4.libraries.dough.collections.Pair;
-import io.github.thebusybiscuit.slimefun4.libraries.dough.updater.BlobBuildUpdater;
 import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
 import io.ncbpfluffybear.slimecustomizer.objects.SCMenu;
 import io.ncbpfluffybear.slimecustomizer.objects.WindowsExplorerStringComparator;
@@ -54,11 +53,9 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
         instance = this;
         itemsFolder = new File(this.getDataFolder(), "saveditems");
 
-        // Read something from your config.yml
-        Config cfg = new Config(this);
-
-        if (cfg.getBoolean("options.auto-update") && getDescription().getVersion().startsWith("Dev - ")) {
-            new BlobBuildUpdater(this, getFile(), "SlimeCustomizer", "Dev").start();
+        if (!RuntimeCompatibility.check(this)) {
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
         }
 
         final Metrics metrics = new Metrics(this, 9841);
@@ -129,6 +126,10 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
     @SneakyThrows
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0) {
+            Utils.send(sender, "&eUsage: /sc saveitem | give <player> <id> [amount] | getsaveditem gui");
+            return true;
+        }
         if (sender instanceof Player && args[0].equals("saveitem")) {
             Player p = (Player) sender;
             if (!Utils.checkPermission(p, "slimecustomizer.admin")) {
@@ -170,7 +171,7 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
 
             int amount;
 
-            if (args[3] != null) {
+            if (args.length > 3) {
 
                 try {
                     amount = Integer.parseInt(args[3]);

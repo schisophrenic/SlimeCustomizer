@@ -1,7 +1,6 @@
 package io.ncbpfluffybear.slimecustomizer.objects;
 
-import dev.j3fftw.extrautils.utils.LoreBuilderDynamic;
-import dev.j3fftw.extrautils.utils.Utils;
+import io.ncbpfluffybear.slimecustomizer.Utils;
 import io.github.thebusybiscuit.slimefun4.api.items.ItemGroup;
 import io.github.thebusybiscuit.slimefun4.api.items.SlimefunItemStack;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
@@ -76,8 +75,8 @@ public class CustomGenerator extends SCAGenerator {
         for (MachineFuel fuel : customRecipes) {
             ItemStack input = fuel.getInput();
             ItemStack customInput = new CustomItemStack(input, input.getItemMeta().getDisplayName(),
-                    "&8\u21E8 &7Lasts " + Utils.ticksToSeconds(fuel.getTicks()),
-                    LoreBuilderDynamic.powerPerTick(getEnergyProduction()),
+                    "&8\u21E8 &7Lasts " + (fuel.getTicks() / 20.0D) + "s",
+                    Utils.powerPerTick(getEnergyProduction()),
                     "&8\u21E8 &e\u26A1 &7" + fuel.getTicks() * getEnergyProduction() + " J in total"
             );
             displayRecipes.add(customInput);

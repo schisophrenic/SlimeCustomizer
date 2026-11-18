@@ -42,6 +42,15 @@ public class Utils {
         RecipeType.MAGIC_WORKBENCH
     ));
 
+    /** Lightweight lore formatting; avoids depending on an outdated ExtraUtils build. */
+    public static String powerPerTick(int energy) {
+        return "&8⇨ &e⚡ &7" + energy + " J/t";
+    }
+
+    public static String powerBuffer(int energy) {
+        return "&8⇨ &e⚡ &7" + energy + " J capacity";
+    }
+
     public static void send(CommandSender s, String msg) {
         s.sendMessage(ChatColor.translateAlternateColorCodes('&', "&a&l[&aSlimeCustomizer&a&l]&7 " + msg));
     }
