@@ -2,6 +2,7 @@ package io.ncbpfluffybear.slimecustomizer.registration;
 
 import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils;
 import io.ncbpfluffybear.slimecustomizer.SlimeCustomizer;
+import io.ncbpfluffybear.slimecustomizer.editor.RecipeOutputOverride;
 import io.ncbpfluffybear.slimecustomizer.Utils;
 import io.ncbpfluffybear.slimecustomizer.objects.SCMobDrop;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
@@ -125,11 +126,11 @@ public class MobDrops {
             };
 
             if (itemType.equalsIgnoreCase("CUSTOM")) {
-                new SCMobDrop(category, tempStack, RecipeType.MOB_DROP, recipe, chance
-                ).register(SlimeCustomizer.getInstance());
+                RecipeOutputOverride.register(new SCMobDrop(category, tempStack, RecipeType.MOB_DROP, recipe, chance
+                ), drops, dropKey);
             } else {
-                new SCMobDrop(category, tempStack, RecipeType.MOB_DROP, recipe, item, chance
-                ).register(SlimeCustomizer.getInstance());
+                RecipeOutputOverride.register(new SCMobDrop(category, tempStack, RecipeType.MOB_DROP, recipe, item, chance
+                ), drops, dropKey);
             }
 
             Utils.notify("Mob drop " + dropKey + " has been registered!");

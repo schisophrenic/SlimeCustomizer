@@ -570,7 +570,7 @@ public final class EditorMenu implements Listener {
             Utils.send(s.player, "&cCrafting requires at least one ingredient and an output.");
             return;
         }
-        if (!draft.valhalla && isRegularItem(s.itemId)) {
+        if (!draft.valhalla) {
             String type = draft.nativeRecipeType;
             if (List.of("ENHANCED_CRAFTING_TABLE", "MAGIC_WORKBENCH", "ARMOR_FORGE", "PRESSURE_CHAMBER").contains(type)
                     && Arrays.stream(draft.inputs).anyMatch(i -> i != null && i.getAmount() > 1)) {

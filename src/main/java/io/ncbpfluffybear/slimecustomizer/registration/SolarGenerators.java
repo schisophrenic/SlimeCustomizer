@@ -1,6 +1,7 @@
 package io.ncbpfluffybear.slimecustomizer.registration;
 
 import io.ncbpfluffybear.slimecustomizer.SlimeCustomizer;
+import io.ncbpfluffybear.slimecustomizer.editor.RecipeOutputOverride;
 import io.ncbpfluffybear.slimecustomizer.Utils;
 import io.ncbpfluffybear.slimecustomizer.objects.CustomSolarGenerator;
 import io.github.thebusybiscuit.slimefun4.api.recipes.RecipeType;
@@ -90,8 +91,8 @@ public class SolarGenerators {
             tempMeta.setLore(itemLore);
             tempStack.setItemMeta(tempMeta);
 
-            new CustomSolarGenerator(category, dayEnergy, nightEnergy, tempStack, recipeType, recipe
-            ).register(SlimeCustomizer.getInstance());
+            RecipeOutputOverride.register(new CustomSolarGenerator(category, dayEnergy, nightEnergy, tempStack, recipeType, recipe
+            ), generators, generatorKey);
 
             Utils.notify("Generator " + generatorKey + " has been registered!");
         }
