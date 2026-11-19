@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/slimefun-legacy-paper-26x
+      - feature/gui-recipe-editor-valhalla-bridge
   pull_request:
     branches:
       - master
@@ -38,6 +39,10 @@ jobs:
           for file in categories.yml items.yml mob-drops.yml machines.yml generators.yml solar-generators.yml; do
             jar tf target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar | grep -qx "$file"
           done
+      - name: Check editor and optional bridge classes
+        run: |
+          jar tf target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar | grep -qx 'io/ncbpfluffybear/slimecustomizer/editor/EditorMenu.class'
+          jar tf target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar | grep -qx 'io/ncbpfluffybear/slimecustomizer/editor/ValhallaBridge.class'
       - name: Check runnable jar contents
         run: |
           jar tf target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar | grep -q '^plugin.yml$'
@@ -47,6 +52,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: SlimeCustomizer-Legacy-${{ matrix.paper }}
+          name: SlimeCustomizer-GUI-Valhalla-TEST-${{ matrix.paper }}
           path: target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar
           retention-days: 7

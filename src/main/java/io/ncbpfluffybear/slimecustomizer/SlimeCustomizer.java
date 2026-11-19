@@ -7,6 +7,8 @@ import io.github.thebusybiscuit.slimefun4.libraries.dough.collections.Pair;
 import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
 import io.ncbpfluffybear.slimecustomizer.objects.SCMenu;
 import io.ncbpfluffybear.slimecustomizer.objects.WindowsExplorerStringComparator;
+import io.ncbpfluffybear.slimecustomizer.editor.EditorMenu;
+import io.ncbpfluffybear.slimecustomizer.editor.ValhallaBridge;
 import io.ncbpfluffybear.slimecustomizer.registration.Categories;
 import io.ncbpfluffybear.slimecustomizer.registration.Generators;
 import io.ncbpfluffybear.slimecustomizer.registration.Items;
@@ -44,6 +46,7 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
 
     public static SlimeCustomizer instance;
     public static File itemsFolder;
+    private EditorMenu editorMenu;
 
     @Override
     public void onEnable() {
@@ -86,12 +89,25 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
         if (!SolarGenerators.register(solarGenerators)) {return;}
         if (!MobDrops.register(mobDrops)) {return;}
         Bukkit.getPluginManager().registerEvents(new Events(), instance);
+        editorMenu = new EditorMenu(this);
+        Bukkit.getPluginManager().registerEvents(editorMenu, this);
+        editorMenu.initialize();
+        ValhallaBridge.start(this);
+        getLogger().info("Admin GUI available at /sc editor (permission: slimecustomizer.admin).");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            Utils.send(sender, "&eUsage: /sc saveitem | give <player> <id> [amount] | getsaveditem gui");
+            Utils.send(sender, "&eUsage: /sc editor | saveitem | give <player> <id> [amount] | getsaveditem gui");
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("editor")) {
+            if (sender instanceof Player player) {
+                if (editorMenu != null) editorMenu.open(player);
+            } else {
+                Utils.send(sender, "&cThe editor is only available in game.");
+            }
             return true;
         }
         if (sender instanceof Player && args[0].equals("saveitem")) {

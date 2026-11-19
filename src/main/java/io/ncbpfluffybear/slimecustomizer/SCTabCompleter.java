@@ -35,6 +35,7 @@ public class SCTabCompleter implements TabCompleter {
             if (args.length == 1) {
 
                 if (player.hasPermission("slimecustomizer.admin")) {
+                    options.add("editor");
                     options.add("saveitem");
                     options.add("give");
                     options.add("getsaveditem");

@@ -98,23 +98,27 @@ public class Items {
             ItemStack[] recipe = Utils.buildCraftingRecipe(items, itemKey, recipeType);
             if (recipe == null) {return false;}
 
+            // Keep the custom Slimefun item identity while allowing a separate
+            // recipe outcome with its original exact ItemStack metadata.
+            io.github.thebusybiscuit.slimefun4.api.items.SlimefunItem registered;
             if (placeable) {
-                if (itemType.equalsIgnoreCase("CUSTOM")) {
-                    new CustomSCItem(category, tempStack, recipeType, recipe
-                    ).register(SlimeCustomizer.getInstance());
-                } else {
-                    new CustomSCItem(category, tempStack, recipeType, recipe, item
-                    ).register(SlimeCustomizer.getInstance());
-                }
+                registered = itemType.equalsIgnoreCase("CUSTOM")
+                        ? new CustomSCItem(category, tempStack, recipeType, recipe)
+                        : new CustomSCItem(category, tempStack, recipeType, recipe, item);
             } else {
-                if (itemType.equalsIgnoreCase("CUSTOM")) {
-                    new NPCustomSCItem(category, tempStack, recipeType, recipe
-                    ).register(SlimeCustomizer.getInstance());
-                } else {
-                    new NPCustomSCItem(category, tempStack, recipeType, recipe, item
-                    ).register(SlimeCustomizer.getInstance());
-                }
+                registered = itemType.equalsIgnoreCase("CUSTOM")
+                        ? new NPCustomSCItem(category, tempStack, recipeType, recipe)
+                        : new NPCustomSCItem(category, tempStack, recipeType, recipe, item);
             }
+            if (items.getValue(itemKey + ".recipe-output") != null) {
+                ItemStack customizedResult = items.getItem(itemKey + ".recipe-output");
+                if (customizedResult == null || customizedResult.getType().isAir()) {
+                    Utils.disable("Invalid customized recipe output for " + itemKey);
+                    return false;
+                }
+                registered.setRecipeOutput(customizedResult);
+            }
+            registered.register(SlimeCustomizer.getInstance());
 
             Utils.notify("Item " + itemKey + " has been registered!");
         }

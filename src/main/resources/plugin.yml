@@ -16,6 +16,7 @@ website: https://github.com/schisophrenic/SlimeCustomizer
 ## This is required and marks Slimefun as a plugin dependency.
 depend: [Slimefun]
 softdepend:
+  - ValhallaMMO
   - ChestTerminal
   - ColoredEnderChests
   - DyedBackpacks

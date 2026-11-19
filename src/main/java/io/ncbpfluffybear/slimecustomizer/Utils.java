@@ -325,7 +325,10 @@ public class Utils {
                 return RecipeType.ORE_CRUSHER;
             case "GRIND_STONE":
                 return RecipeType.GRIND_STONE;
+            case "VALHALLA_GRID":
             case "NONE":
+                // Valhalla registers the crafting result separately, avoiding
+                // duplicate consumption from a second native Slimefun recipe.
                 return RecipeType.NULL;
         }
     }
