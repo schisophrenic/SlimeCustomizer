@@ -278,13 +278,6 @@ public final class EditorMenu implements Listener {
                 "&7Changes display category only.",
                 "&7Recipe and registered item ownership stay intact.",
                 "&7Saved in editor-order.yml for restarts."));
-        s.inventory.setItem(43, button(Material.CRAFTING_TABLE,
-                "&eCrafting machine: " + (d.valhalla ? "VALHALLA_GRID" : d.nativeRecipeType),
-                "&7Left-click: next Slimefun machine.",
-                "&7Right-click: previous Slimefun machine.",
-                "&7Only valid supported crafting stations are shown.",
-                "&7Changing it overrides the old crafting-recipe-type.",
-                "&7For grid >1 per slot, toggle Valhalla mode."));
         s.inventory.setItem(45, button(Material.ARROW, "&eBack to items"));
         s.inventory.setItem(49, button(Material.BOOK, "&eRead-only Slimefun recipe",
                 "&7This item belongs to another plugin.",
@@ -322,6 +315,13 @@ public final class EditorMenu implements Listener {
                     "&7Right +1  Shift-right -1 (1 to 16)", "&7Applied when Valhalla grid mode is ON.",
                     "&7No separate crafting event or duplicate rewards."));
         }
+        s.inventory.setItem(43, button(Material.CRAFTING_TABLE,
+                "&eCrafting machine: " + (d.valhalla ? "VALHALLA_GRID" : d.nativeRecipeType),
+                "&7Left-click: next Slimefun machine.",
+                "&7Right-click: previous Slimefun machine.",
+                "&7Only valid supported crafting stations are shown.",
+                "&7Changing it overrides the old crafting-recipe-type.",
+                "&7For grid >1 per slot, toggle Valhalla mode."));
         s.inventory.setItem(45, button(Material.ARROW, "&eBack to items"));
         s.inventory.setItem(49, button(Material.EMERALD, "&aSAVE recipe",
                 "&7Save YAML and restart to activate.",
