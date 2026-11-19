@@ -1,0 +1,58 @@
+name: SlimeCustomizer GUI and Slimefun-Legacy CI
+
+on:
+  push:
+    branches:
+      - master
+      - feature/slimefun-legacy-paper-26x
+      - feature/gui-recipe-editor-valhalla-bridge
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile-test:
+    name: Build and tests (Paper API ${{ matrix.paper }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        paper:
+          - "1.21.11-R0.1-SNAPSHOT"
+          - "26.3.build.166-beta"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 25 (emit Java 21 bytecode)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Install published Slimefun-Legacy 4.1.80 API
+        run: |
+          bash scripts/install-slimefun-legacy.sh || {
+            echo "Retrying transient Maven/plugin repository download failure"
+            sleep 6
+            bash scripts/install-slimefun-legacy.sh
+          }
+      - name: Compile against Paper API ${{ matrix.paper }} and run regression tests
+        run: mvn -B -Dpaper.api.version=${{ matrix.paper }} clean verify
+      - name: Verify runnable JAR resources and editor classes
+        run: |
+          JAR="target/SlimeCustomizer-1.1.1-gui-recovery-SNAPSHOT.jar"
+          test -s "$JAR"
+          for path in plugin.yml slimefun-compatibility.json categories.yml items.yml machines.yml generators.yml solar-generators.yml mob-drops.yml \
+            io/ncbpfluffybear/slimecustomizer/StartupStatus.class \
+            io/ncbpfluffybear/slimecustomizer/editor/EditorMenu.class \
+            io/ncbpfluffybear/slimecustomizer/editor/ValhallaBridge.class; do
+            jar tf "$JAR" | grep -Fxq "$path"
+          done
+      - name: Upload runnable test JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: SlimeCustomizer-1.1.1-GUI-Recovery-TEST-${{ matrix.paper }}
+          path: target/SlimeCustomizer-1.1.1-gui-recovery-SNAPSHOT.jar
+          retention-days: 7

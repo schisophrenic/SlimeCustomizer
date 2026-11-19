@@ -1,36 +1,39 @@
 ---
-name: Bug Report
-about: Report a Bug or an Issue with this Plugin.
-title: ''
-labels: bug
-assignees: ''
-
+name: Startup or gameplay bug
+about: Report a SlimeCustomizer-Legacy/GUI issue with the earliest error log and environment.
+title: ""
+labels: ["bug"]
+assignees: []
 ---
 
-## Description (Required)
-<!-- A clear and detailed description of what exactly the Issue consists of. -->
-<!-- Please try to write as much as possible. "it doesn't work" is not sufficient. -->
-<!-- Try to write at least 4-6 sentences. -->
+## Version details
 
-## Steps to reproduce the Issue (Required)
-<!-- Youtube Videos and Screenshots are recommended! -->
+- SlimeCustomizer JAR version/commit:
+- Paper/Purpur build:
+- Minecraft version:
+- Java version:
+- Slimefun-Legacy version:
+- ValhallaMMO-Rewritten version (if installed):
 
-## Expected behavior (Required)
-<!-- What did you expect to happen? -->
+## What happened?
 
-## Server Log / Error Report
-<!-- Take a look at your Server Log and please provide any error reports you can find via https://pastebin.com/ -->
-<!-- We may discard your Issue if you just post it here, as it's unreadable for us. Please use Pastebin! -->
+Include what you expected, what happened and exact steps to reproduce.
 
-## Config Files
-<!-- Attach your config files via Pastebin here. -->
+## Startup diagnostics
 
-## Environment (Required)
-<!-- We may also close your Issue if you are not providing the exact version numbers. -->
-<!-- "latest" IS NOT A VERSION NUMBER. -->
-<!-- You can also just run "/sf versions" and show us a screenshot of that. -->
+- `/sc status` output:
+- First `[SC-STARTUP]`, `[SlimeCustomizer]` or `[Slimefun]` error **before** the attempted command:
+- Stack trace or attached `latest.log`:
 
- - Minecraft Version:
- - CS-CoreLib Version:
- - Slimefun Version:
- - Plugin Version: 
+An error saying "plugin is disabled" is not itself the startup cause.
+
+## Relevant configuration
+
+Attach the minimal YAML for the failing item/category/recipe. Remove private
+server information, IPs, tokens, passwords and player identifiers.
+
+## Safety checks
+
+- Did you test on a backed-up server?
+- Does the issue reproduce after a full restart (not `/reload`)?
+- For recipe issues: what changed with item quantities, output and shift-click?

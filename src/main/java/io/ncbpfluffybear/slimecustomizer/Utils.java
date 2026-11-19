@@ -72,9 +72,12 @@ public class Utils {
         Bukkit.getConsoleSender().sendMessage("[SlimeCustomizer] " + ChatColor.GREEN + reason);
     }
 
+    /**
+     * Abort only the current registration pass, not the entire Bukkit plugin:
+     * admins need /sc editor to remain usable in configuration recovery mode.
+     */
     public static void disable(String reason) {
-        Bukkit.getLogger().log(Level.SEVERE, "[SlimeCustomizer] " + reason);
-        Bukkit.getPluginManager().disablePlugin(SlimeCustomizer.getInstance());
+        throw new IllegalArgumentException(reason);
     }
 
     public static boolean checkFitsStackSize(ItemStack item, String slot, String machineKey, String recipeKey) {

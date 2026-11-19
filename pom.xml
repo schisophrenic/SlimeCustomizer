@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.ncbpfluffybear</groupId>
     <artifactId>SlimeCustomizer</artifactId>
-    <version>1.1.0-legacy-SNAPSHOT</version>
+    <version>1.1.1-gui-recovery-SNAPSHOT</version>
     <name>SlimeCustomizer</name>
 
     <properties>

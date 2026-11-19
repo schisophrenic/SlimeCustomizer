@@ -540,9 +540,32 @@ public final class EditorMenu implements Listener {
         }
         SlimefunItem item = SlimefunItem.getById(id);
         ItemStack configuredOutput = yaml.getItemStack(id + ".recipe-output");
-        draft.outputs[0] = configuredOutput == null
-                ? (item == null ? null : item.getRecipeOutput().clone())
-                : configuredOutput.clone();
+        if (configuredOutput != null) {
+            draft.outputs[0] = configuredOutput.clone();
+        } else if (item != null) {
+            draft.outputs[0] = item.getRecipeOutput().clone();
+        } else {
+            // Registration may have failed before this item was created.
+            // Show a safe material preview from its YAML for recovery editing.
+            String sourceType = yaml.getString(id + ".item-type", "CUSTOM");
+            if ("CUSTOM".equalsIgnoreCase(sourceType)) {
+                Material material = Material.matchMaterial(yaml.getString(id + ".item-id", ""));
+                if (material != null && !material.isAir()) {
+                    draft.outputs[0] = new ItemStack(material,
+                            Math.max(1, Math.min(material.getMaxStackSize(),
+                                    yaml.getInt(id + ".item-amount", 1))));
+                }
+            } else if ("SAVEDITEM".equalsIgnoreCase(sourceType)) {
+                String idSaved = yaml.getString(id + ".item-id", "");
+                java.io.File savedFile = new java.io.File(plugin.getDataFolder(), "saveditems/" + idSaved + ".yml");
+                ItemStack loaded = YamlConfiguration.loadConfiguration(savedFile).getItemStack("item");
+                if (loaded != null) {
+                    loaded.setAmount(Math.min(loaded.getMaxStackSize(),
+                            Math.max(1, yaml.getInt(id + ".item-amount", 1))));
+                    draft.outputs[0] = loaded;
+                }
+            }
+        }
         String type = yaml.getString(id + ".crafting-recipe-type", "ENHANCED_CRAFTING_TABLE");
         draft.valhalla = type.equalsIgnoreCase("VALHALLA_GRID");
         draft.nativeRecipeType = yaml.getString(id + ".previous-recipe-type",

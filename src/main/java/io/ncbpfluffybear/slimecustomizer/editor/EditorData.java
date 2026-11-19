@@ -43,28 +43,43 @@ public final class EditorData {
                 new File(plugin.getDataFolder(), "categories.yml"));
         List<String> configured = order.getStringList("category-order");
         java.util.LinkedHashSet<String> sorted = new java.util.LinkedHashSet<>();
-        if (configured.isEmpty()) sorted.addAll(defaults.getKeys(false));
-        else sorted.addAll(configured);
+        sorted.addAll(configured);
+        // Show unregistered YAML categories too so admins can repair startup.
+        sorted.addAll(defaults.getKeys(false));
         List<String> missing = new ArrayList<>(Registry.allItemGroups.keySet());
         missing.sort(String.CASE_INSENSITIVE_ORDER);
         sorted.addAll(missing);
-        sorted.removeIf(key -> !Registry.allItemGroups.containsKey(key));
         return new ArrayList<>(sorted);
     }
 
     public List<String> items(String categoryId) {
-        ItemGroup category = Registry.allItemGroups.get(categoryId);
-        if (category == null) return List.of();
-        List<String> result = new ArrayList<>();
-        for (SlimefunItem item : category.getItems()) {
-            if (item.getAddon() != null && item.getAddon().getName().equals(plugin.getName())) {
-                result.add(item.getId());
+        java.util.LinkedHashSet<String> result = new java.util.LinkedHashSet<>();
+
+        // YAML is authoritative even when an earlier item fails registration.
+        for (String filename : ITEM_FILES) {
+            File file = new File(plugin.getDataFolder(), filename);
+            YamlConfiguration source = YamlConfiguration.loadConfiguration(file);
+            for (String id : source.getKeys(false)) {
+                if (categoryId.equals(source.getString(id + ".category"))) {
+                    result.add(id);
+                }
             }
         }
+
+        ItemGroup category = Registry.allItemGroups.get(categoryId);
+        if (category != null) {
+            for (SlimefunItem item : category.getItems()) {
+                if (item.getAddon() != null && item.getAddon().getName().equals(plugin.getName())) {
+                    result.add(item.getId());
+                }
+            }
+        }
+
         YamlConfiguration config = YamlConfiguration.loadConfiguration(orderFile);
         List<String> configured = config.getStringList("item-order." + categoryId);
-        result.sort(Comparator.comparingInt(k -> index(configured, k)));
-        return result;
+        List<String> list = new ArrayList<>(result);
+        list.sort(Comparator.comparingInt(k -> index(configured, k)));
+        return list;
     }
 
     private static int index(List<String> order, String id) {
@@ -118,20 +133,33 @@ public final class EditorData {
     }
 
     public boolean moveItemToCategory(String id, String category) throws IOException {
-        if (!Registry.allItemGroups.containsKey(category)) return false;
-        SlimefunItem item = SlimefunItem.getById(id);
-        if (item == null || item.getAddon() == null || !item.getAddon().getName().equals(plugin.getName())) {
-            return false;
-        }
-        ItemGroup target = Registry.allItemGroups.get(category);
-        if (target instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.NestedItemGroup) return false;
         File file = sourceFile(id);
         if (file == null) return false;
+
+        // Preserve custom item IDs. Never move someone else's Slimefun item.
+        SlimefunItem registered = SlimefunItem.getById(id);
+        if (registered != null && (registered.getAddon() == null
+                || !registered.getAddon().getName().equals(plugin.getName()))) return false;
+
+        YamlConfiguration categories = YamlConfiguration.loadConfiguration(
+                new File(plugin.getDataFolder(), "categories.yml"));
+        if (!categories.isConfigurationSection(category)
+                || "nested".equalsIgnoreCase(categories.getString(category + ".type"))) {
+            return false;
+        }
+
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         yaml.set(id + ".category", category);
         yaml.save(file);
-        item.setItemGroup(target);
-        applyOrder();
+
+        ItemGroup target = Registry.allItemGroups.get(category);
+        if (registered != null && target != null
+                && !(target instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.NestedItemGroup)) {
+            registered.setItemGroup(target);
+            applyOrder();
+        }
+        // If registration failed before this item/group was loaded, the saved
+        // YAML takes effect on restart when registration succeeds.
         return true;
     }
 

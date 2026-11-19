@@ -1,584 +1,116 @@
-# SlimeCustomizer
-This Slimefun4 addon allows any server owner to add their own custom Slimefun machines!
-<p align="center">
-  <a href="https://thebusybiscuit.github.io/builds/NCBPFluffyBear/SlimeCustomizer/master/">
-    <img src="https://thebusybiscuit.github.io/builds/NCBPFluffyBear/SlimeCustomizer/master/badge.svg" alt="Build Server"/>
-  </a>
-</p>
+# SlimeCustomizer, Slimefun-Legacy Edition
 
-### Showcase
-*Want to see what SlimeCustomizer can do? Visit `play.royale-mc.com` and take a look at their custom items! All showcase image credits go to Azakaturan.*
+A development fork of the original **SlimeCustomizer**, updated for the maintained
+[Slimefun-Legacy](https://github.com/wickidcow/Slimefun-Legacy) core and
+Paper/Purpur 1.21.11 and 26.3. It lets server administrators define custom
+Slimefun categories, items, machines, generators and mob drops in YAML, with
+an **in-game GUI editor** for item arrangement and crafting recipes.
 
-![Resources](https://user-images.githubusercontent.com/31554056/110004177-c124dd00-7cdc-11eb-8031-3c1feeec228e.png)\
-![Category](https://user-images.githubusercontent.com/31554056/110005314-f2ea7380-7cdd-11eb-9090-36017111cbf1.png)
-![Electric Ingot Factory IV](https://user-images.githubusercontent.com/31554056/110005311-f251dd00-7cdd-11eb-905a-55d4a86ff5d0.png)
-![Heated Redstone](https://user-images.githubusercontent.com/31554056/110005901-9cca0000-7cde-11eb-846c-2a1bd5b2c900.png)
-![Charcoal Kiln](https://user-images.githubusercontent.com/31554056/110005316-f2ea7380-7cdd-11eb-8bd3-d95d50b25be6.png)
-![Heated Carbon Press](https://user-images.githubusercontent.com/31554056/110005318-f3830a00-7cdd-11eb-871b-6b9fa733231a.png)
+> **TEST BUILD.** Java/API compilation and automated configuration tests do
+> not prove runtime compatibility. Use a backed-up test server. Do not merge
+> into production until in-game results have been verified.
 
-#### Reporting bugs
-Please report all bugs in the [issue tracker](https://github.com/NCBPFluffyBear/SlimeCustomizer/issues).
+## Installation
 
-## How to use SlimeCustomizer
+1. Back up the server, player data and `plugins/SlimeCustomizer/`.
+2. Install **Slimefun-Legacy** as the only Slimefun core. The build baseline
+   is version **4.1.80**. Do not install the old Slimefun4 core at the same time.
+3. Use Java 21+ for Paper 1.21.11 or Java 25+ for Paper/Purpur 26.3.
+4. Download the matching **runnable JAR** from
+   [GitHub Actions](https://github.com/schisophrenic/SlimeCustomizer/actions)
+   for the `feature/gui-recipe-editor-valhalla-bridge` branch and place it in
+   `plugins/`. Remove older duplicate SlimeCustomizer JARs.
+5. Restart the server. The `plugins/SlimeCustomizer/` directory and default
+   YAML files will be created on first launch. Existing config and
+   `saveditems/` files are preserved.
+6. Run **`/sc status`**. If it reports `READY`, try **`/sc editor`**.
 
-##### Installing the plugin
-1. Download SlimeCustomizer via the [Slimefun repo server](https://thebusybiscuit.github.io/builds/NCBPFluffyBear/SlimeCustomizer/master/)
-2. Move the downloaded jar (SlimeCustomizer - DEV ... .jar) to your plugins folder, located at `\<YOUR_SERVER_LOCATION>\plugins`
-3. Start the server to generate the proper configuration files
-4. Stop the server
-
-##### Adding your category
-1. Open the `categories.yml` file, located at `\<YOUR_SERVER_LOCATION>\plugins\SlimeCustomizer`
-The table below explains what each key does. If no items are in your category, it will not appear.
-
-```yaml
-slime_customizer:
-  type: normal
-  category-name: "&cSlimeCustomizer"
-  category-item: REDSTONE_LAMP
-nested_group:
-  type: nested
-  category-name: "&cSlimeCustomizer - Nested"
-  category-item: BEDROCK
-sub_group:
-  type: sub
-  category-name: "&cSlimeCustomizer - Sub"
-  category-item: DIRT
-  parent: nested_group
-seasonal_group:
-  type: seasonal
-  category-name: "&cSlimeCustomizer - Seasonal"
-  category-item: DIAMOND
-  month: 9
-locked_group:
-  type: locked
-  category-name: "&cSlimeCustomizer - Locked"
-  category-item: DIAMOND
-  parents:
-    - slimefun:basic_machines
-
-```
-
-| Key | Description |
-| -------- | -------- |
-| slime_customizer | The ID of the category. You can change this key! |
-| type | The type of the category. |
-| category-name | The name of the category that shows in the Slimefun guide. |
-| category-item | The vanilla material ID or skull hash of the item that this category will use in the Slimefun guide. |
-| tier | A number that indicates the position of this category in Slimefun Guide. Default: 3 |
-
-
-The types of category:
-- `normal`: the category type that all current categories belong to. Can contain items. **This is the default value.**
-- `nested`: a nested category can contain several sub categories, CANNOT contain items.
-- `sub`: a sub category is belong to a nested category, can contain items. **Required fields:**
-  - `parent`: the id of a nested category (from SlimeCustomizer)
-- `seasonal`: a seasonal category will only appear in Slimefun Guide in a specified month. **Required fields:**
-  - `month`: the numerical month. 1 = Jan, 2 = Feb, and so on...
-- `locked`: a locked category cannot be opened until all parent categories are fully unlocked. **Required fields:**
-  - `parents`: the list of keys of parent categories. The key of a category is usually `<plugin name>:<category name>`. For example, the key of Basic Machines in Slimefun is `slimefun:basic_machines`.
-
-
-##### Adding your item
-1. Open the `items.yml` file, located at `\<YOUR_SERVER_LOCATION>\plugins\SlimeCustomizer`
-The table below explains what each key does.
-
-
-```yaml
-EXAMPLE_ITEM:
-  category: slime_customizer
-  item-type: CUSTOM
-  item-name: "&bExample Item"
-  item-lore:
-  - "&7This is an example item!"
-  - "&cSlimeCustomizer now supports multiline lore!"
-  item-id: STICK
-  item-amount: 1
-  placeable: false
-  crafting-recipe-type: ENHANCED_CRAFTING_TABLE
-  crafting-recipe:
-    1:
-      type: VANILLA
-      id: STICK
-      amount: 1
-    2:
-      type: NONE
-      id: N/A
-      amount: 1
-    3:
-      type: NONE
-      id: N/A
-      amount: 1
-    4:
-      type: VANILLA
-      id: STICK
-      amount: 1
-    5:
-      type: NONE
-      id: N/A
-      amount: 1
-    6:
-      type: NONE
-      id: N/A
-      amount: 1
-    7:
-      type: NONE
-      id: N/A
-      amount: 1
-    8:
-      type: NONE
-      id: N/A
-      amount: 1
-    9:
-      type: NONE
-      id: N/A
-      amount: 1
-```
-
-| Key | Description | Acceptable Inputs |
-| --- | ----------- | ----------------- |
-| EXAMPLE_ITEM | The ID of the item. You can change this key! |
-| category | The key of the category that this item will be under in the Slimefun guide.
-| item-type | The type of item that you are registering. | CUSTOM (You define the name, lore, and type), SAVEDITEM (Load key from saveditems folder) |
-| item-name | The name of the item. |
-| item-lore | The lore of the item. |
-| item-id | The vanilla ID or skull hash of the material this item will use. |
-| item-amount | The amount of this item crafted at once. |
-| placeable | If the item is placeable or not. DO NOT MAKE TOOLS PLACEABLE! |
-| crafting-recipe-type | The multiblock machine that this item will be crafted in. | ENHANCED_CRAFTING_TABLE, MAGIC_WORKBENCH, ARMOR_FORGE, COMPRESSOR, PRESSURE_CHAMBER, SMELTERY, ORE_CRUSHER, GRIND_STONE, NONE (Can not be crafted with multiblocks) |
-| crafting-recipe.#.type | The type of item. | NONE (Empty spot, all other fields will be ignored), SLIMEFUN, SAVEDITEM |
-| crafting-recipe.#.id | The id of the item. |
-| crafting-recipe.#.amount | The amount of the item. |
-
-*These items CAN be used in your custom machines/generators as well!*
-*All registered CUSTOM items can be referred to with their id under the type SLIMEFUN. If you want to use an item inside items.yml as a crafting component for another item, it the crafting component must be registered beforehand.*
-
-*Slimefun items are tagged with a key in their metadata so that they are recognized by Slimefun. To make sure that your SAVEDITEMs do not have conflicts if they need to be recognized by other plugins, this tag is removed. CUSTOM items still have this tag. Because of this, using `/sf give` on a SAVEDITEM may interfere with other plugins since it will be tagged. To get the untagged version of this item, use `/sc give` instead.*
-
-##### Adding your machine
-1. Open the `machines.yml` file, located at `\<YOUR_SERVER_LOCATION>\plugins\SlimeCustomizer`
-The table below explains what each key does.
-
-```yaml
-EXAMPLE_MACHINE:
-  category: slime_customizer
-  machine-name: "&bExample Machine"
-  machine-lore:
-  - "&7This is an example machine!"
-  block-type: FURNACE
-  progress-bar-item: FLINT_AND_STEEL
-  stats:
-    energy-consumption: 16
-    energy-buffer: 64
-  crafting-recipe-type: ENHANCED_CRAFTING_TABLE
-  crafting-recipe:
-    1:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    2:
-      type: NONE
-      id: N/A
-      amount: 1
-    3:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    4:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    5:
-      type: SLIMEFUN
-      id: SMALL_CAPACITOR
-      amount: 1
-    6:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    7:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    8:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    9:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-  recipes:
-    1:
-      speed-in-seconds: 5
-      input:
-        1:
-          type: VANILLA
-          id: IRON_INGOT
-          amount: 9
-        2:
-          type: NONE
-          id: N/A
-          amount: 1
-      output:
-        1:
-          type: VANILLA
-          id: IRON_BLOCK
-          amount: 1
-        2:
-          type: NONE
-          id: N/A
-          amount: 1
-    2:
-      speed-in-seconds: 5
-      input:
-        1:
-          type: SLIMEFUN
-          id: GOLD_24K
-          amount: 9
-        2:
-          type: NONE
-          id: N/A
-          amount: 1
-      output:
-        1:
-          type: SLIMEFUN
-          id: GOLD_24K_BLOCK
-          amount: 1
-        2:
-          type: NONE
-          id: N/A
-          amount: 1
-```
-| Key | Description | Acceptable Inputs |
-| --- | ----------- | ----------------- |
-| EXAMPLE_MACHINE | The ID of the machine. You can change this key! |
-| category | The key of the category that this item will be under in the Slimefun guide.
-| machine-name | The name of the machine. |
-| machine-lore | The lore of the machine. |
-| block-type | The vanilla ID or skull hash of the material this item will use. | 
-| progress-bar-item | The vanilla ID of the progress bar item. |
-| stats.energy-consumption | The amount of energy consumed by this machine per Slimefun tick. |
-| stats.energy-buffer | The amount of energy that can be stored in this machine. |
-| crafting-recipe-type | The multiblock machine that this item will be crafted in. | ENHANCED_CRAFTING_TABLE, MAGIC_WORKBENCH, ARMOR_FORGE, COMPRESSOR, PRESSURE_CHAMBER, SMELTERY, ORE_CRUSHER, GRIND_STONE, NONE (Can not be crafted with multiblocks) |
-| crafting-recipe.#.type | The type of item. | NONE (Empty spot, all other fields will be ignored), VANILLA, SLIMEFUN, SAVEDITEM |
-| crafting-recipe.#.id | The id of the item based on the type. |
-| crafting-recipe.#.amount | The amount of the item to use in the recipe. Enhanced Crafting Table only accepts 1. |
-| recipes.#.speed-in-seconds | The time it takes for the recipe to complete. |
-| recipes.#.input/output.#.type | The type of item. | NONE (Empty spot, all other fields will be ignored), VANILLA, SLIMEFUN, SAVEDITEM |
-| recipes.#.input/output.#.id | The id of the item based on the type. |
-| recipes.#.input/output.#.amount | The amount of items. |
-
-*There can as many recipes as you want, but only be 2 inputs and 2 outputs for each recipe*
-
-##### Adding your generator
-1. Open the `generators.yml` file, located at `\<YOUR_SERVER_LOCATION>\plugins\SlimeCustomizer`
-The table below explains what each key does.
-
-```yaml
-EXAMPLE_GENERATOR:
-  category: slime_customizer
-  generator-name: "&bExample Generator"
-  generator-lore:
-  - "&7This is an example generator!"
-  block-type: SKULLe707c7f6c3a056a377d4120028405fdd09acfcd5ae804bfde0f653be866afe39
-  progress-bar-item: FLINT_AND_STEEL
-  stats:
-    energy-production: 16
-    energy-buffer: 64
-  crafting-recipe-type: ENHANCED_CRAFTING_TABLE
-  crafting-recipe:
-    1:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    2:
-      type: NONE
-      id: N/A
-      amount: 1
-    3:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    4:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    5:
-      type: SLIMEFUN
-      id: COAL_GENERATOR
-      amount: 1
-    6:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    7:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    8:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    9:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-  recipes:
-    1:
-      time-in-seconds: 5
-      input:
-        type: VANILLA
-        id: SPRUCE_SIGN
-        amount: 1
-      output:
-        type: NONE
-        id: N/A
-        amount: N/A
-    2:
-      time-in-seconds: 10
-      input:
-        type: VANILLA
-        id: BEDROCK
-        amount: 1
-      output:
-        type: VANILLA
-        id: BIRCH_PLANKS
-        amount: 1
-```
-| Key | Description | Acceptable Inputs |
-| --- | ----------- | ----------------- |
-| EXAMPLE_GENERATOR | The ID of the generator. You can change this key! |
-| category | The key of the category that this item will be under in the Slimefun guide.
-| generator-name | The name of the generator. |
-| generator-lore | The lore of the generator. |
-| block-type | The vanilla ID or skull hash of the material this item will use. | 
-| progress-bar-item | The vanilla ID of the progress bar item. |
-| stats.energy-production | The amount of energy produced by this generator per Slimefun tick. |
-| stats.energy-buffer | The amount of energy that can be stored in this machine. |
-| crafting-recipe-type | The multiblock machine that this item will be crafted in. | ENHANCED_CRAFTING_TABLE, MAGIC_WORKBENCH, ARMOR_FORGE, COMPRESSOR, PRESSURE_CHAMBER, SMELTERY, ORE_CRUSHER, GRIND_STONE, NONE (Can not be crafted with multiblocks) |
-| crafting-recipe.#.type | The type of item. | NONE (Empty spot, all other fields will be ignored), VANILLA, SLIMEFUN, SAVEDITEM |
-| crafting-recipe.#.id | The id of the item based on the type. |
-| crafting-recipe.#.amount | The amount of the item to use in the recipe. Enhanced Crafting Table only accepts 1. |
-| recipes.#.time-in-seconds | The time it takes for the recipe to complete. |
-| recipes.#.input/output.type | The type of item. | NONE (Empty spot, all other fields will be ignored), VANILLA, SLIMEFUN, SAVEDITEM |
-| recipes.#.input/output.id | The id of the item based on the type. |
-| recipes.#.input/output.amount | The amount of items. |
-
-##### Adding your solar generator
-1. Open the `solar-generators.yml` file, located at `\<YOUR_SERVER_LOCATION>\plugins\SlimeCustomizer`
-The table below explains what each key does.
-
-```yaml
-EXAMPLE_SOLAR_GENERATOR:
-  category: slime_customizer
-  generator-name: "&bExample Solar Generator"
-  generator-lore:
-  - "&7This is an example solar generator!"
-  block-type: DAYLIGHT_DETECTOR
-  stats:
-    energy-production:
-      day: 256
-      night: 128
-  crafting-recipe-type: ENHANCED_CRAFTING_TABLE
-  crafting-recipe:
-    1:
-      type: VANILLA
-      id: BEDROCK
-      amount: 1
-    2:
-      type: NONE
-      id: N/A
-      amount: 1
-    3:
-      type: VANILLA
-      id: BEDROCK
-      amount: 1
-    4:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    5:
-      type: SLIMEFUN
-      id: COAL_GENERATOR
-      amount: 1
-    6:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    7:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    8:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-    9:
-      type: VANILLA
-      id: IRON_BLOCK
-      amount: 1
-```
-| Key | Description | Acceptable Inputs |
-| --- | ----------- | ----------------- |
-| EXAMPLE_SOLAR_GENERATOR | The ID of the generator. You can change this key! |
-| category | The key of the category that this item will be under in the Slimefun guide.
-| generator-name | The name of the generator. |
-| generator-lore | The lore of the generator. |
-| block-type | The vanilla ID or skull hash of the material this item will use. | 
-| stats.energy-production.day | The amount of energy produced by this generator per Slimefun tick during daytime. |
-| stats.energy-production.day | The amount of energy produced by this generator per Slimefun tick during nighttime. |
-| crafting-recipe-type | The multiblock machine that this item will be crafted in. | ENHANCED_CRAFTING_TABLE, MAGIC_WORKBENCH, ARMOR_FORGE, COMPRESSOR, PRESSURE_CHAMBER, SMELTERY, ORE_CRUSHER, GRIND_STONE, NONE (Can not be crafted with multiblocks) |
-| crafting-recipe.#.type | The type of item. | NONE (Empty spot, all other fields will be ignored), VANILLA, SLIMEFUN, SAVEDITEM |
-| crafting-recipe.#.id | The id of the item based on the type. |
-| crafting-recipe.#.amount | The amount of the item to use in the recipe. Enhanced Crafting Table only accepts 1. |
-
-##### Adding your mob drops
-1. Open the `mob-drops.yml` file, located at `\<YOUR_SERVER_LOCATION>\plugins\SlimeCustomizer`
-   The table below explains what each key does.
-
-```yaml
-#READ THE WIKI BEFORE CREATING AN ITEM! https://github.com/NCBPFluffyBear/SlimeCustomizer/blob/master/README.md
-EXAMPLE_DROP:
-  category: slime_customizer
-  item-type: CUSTOM
-  item-name: "&bExample Drop"
-  item-lore:
-    - "&7This is an example mob-drop!"
-    - "&cExample drops are not obtainable"
-  item-id: STICK
-  item-amount: 1
-  mob: GHAST
-  chance: 0
-  recipe-display-item: GHAST_SPAWN_EGG
-```
-| Key | Description | Acceptable Inputs |
-| --- | ----------- | ----------------- |
-| EXAMPLE_DROP | The ID of the mob drop. You can change this key! |
-| category | The key of the category that this drop will appear under in the Slimefun guide.
-| item-type | The type of item that you are registering. | CUSTOM (You define the name, lore, and type), SAVEDITEM (Load key from saveditems folder) |
-| item-name | The name of the item. (Custom item types only) |
-| item-lore | The lore of the item. (Custom item types only) |
-| item-id | The vanilla ID or skull hash of the material this item will use. |
-| item-amount | The amount of this item dropped. |
-| mob | The type of mob that drops this item |
-| chance | The chance that the specified mob drops the item (0 - 100) |
-| recipe-display-item | The item that appears in the Slimefun guide's instructions on how to obtain this drop |
-
-#### Using skull textures
-Want to use a skull texture instead of a block? Replace `block-type` with `SKULL<hash>`. Example provided in the generators config.
-How to create a skull hash: https://bukkit.org/threads/create-your-own-custom-head-texture.424286/
-
-#### Registering items under existing categories
-You can register any SlimeCustomizer component under preexisting categories.
-1. Use `/sc categories` to find the category's ID, which will be located in the lore.
-2. In any `category` field in SC configuration files, prefix the ID you have located with `existing:`, i.e. `existing:slimefun:misc`.
-
-#### Using custom items
-SlimeCustomizer supports custom items! These can be from other plugins or even renamed/relored items!
-
-###### I will be "setting up" an example item along the way.
-##### Saving an item
-1. Hold the item you want to use in your hand
-2. Type `/sc saveitem` (You must have the proper permissions to use this command)
-
-The location of where your item is saved will appear in chat. You can rename this file to anything WITHOUT SPACES. This name will be used in your configs.
-
-###### Example: Hold dirt, type /sc saveitem. Navigate to `\plugins\SlimeCustomizer\saveditems` and rename `0.yml` to `DIRT.yml` 
-##### Using your saved item
-Your saved item can be used in crafting recipes, machine inputs/outputs, and generator inputs/outputs.
-For `type`, use `SAVEDITEM` and for `id`, use the file name.
-
-###### Example:
-```yaml
-1:
-  type: SAVEDITEM
-  id: DIRT    
-```
-#### Important notes
-- Shaped multiblock machines (ENHANCED_CRAFTING_TABLE, MAGIC_WORKBENCH, ARMOR_FORGE, PRESSURE_CHAMBER) will only accept recipe inputs with a stack size of 1.
-- The speed/time and energy production/consumption that you configure may not line up exactly in game depending in your Slimefun tick delay. The lore is adaptive to show you to correct values according to real time.
-- When the `type` for the crafting recipes or machine inputs/outputs is set to NONE, all of the fields below it can be omitted.
-- If you are updating SlimeCustomizer and new keys have been added, they may appear in different spots than in the examples provided above. Feel free to move them around.
-- Names and lore can be colored using [standard Minecraft chat color codes](https://htmlcolorcodes.com/minecraft-color-codes/). Instead of using `§`, use `&` before the color code. Ex: `&4&lSlimeCustomizer` will display "SlimeCustomizer" in red (`&4`) and bold (`&l`).
-- Hex color codes are also supported. Ex: To make the word "text" appear in the color `#123456`, use `&x&1&2&3&4&5&6text`, where the combination starts with `&x` and each follwing hex value has a `&` in front of it.
-
-## Permissions
-| **Permission** | **Description** |
-| --------------------- | ---------------------------------------- |
-| slimecustomizer.admin | Access to SlimeCustomizer admin commands |
+ValhallaMMO-Rewritten is **optional**. Native Slimefun recipes and the GUI
+work without it. Recipes explicitly configured as `VALHALLA_GRID` require
+its compatible grid crafting API and will not craft without it.
 
 ## Commands
-| **Command** | **Permission** | **Parameters** | **Description** |
-| ----------- | -------------- | -------------- | --------------- |
-| saveitem | slimecustomizer.admin | | Saves the item in your hand to a yml file. Read #saving-an-item for more info. |
-| give | slimecustomizer.admin | \<player_name\> \<item_id\> \<amount\> | Used to give an item to a player. |
-| getsaveditem | slimecustomizer.admin | gui / \<item_id\> \<player_name\> \<amount\> | Used to get/give a saveditem. |
-| categories   | slimecustomizer.admin | | Opens a GUI showing the namespacedkeys for all categories  |
 
-## Compatability with other Slimefun addons
-To be compatible with items from other addons, SlimeCustomizer softdepends the following:
-  - ChestTerminal
-  - ColoredEnderChests
-  - DyedBackpacks
-  - EcoPower
-  - ElectricSpawners
-  - ExoticGarden
-  - ExtraGear
-  - ExtraHeads
-  - HotbarPets
-  - luckyblocks-sf
-  - PrivateStorage
-  - SlimefunOreChunks
-  - SlimyTreeTaps
-  - SoulJars
-  - CommandOverride
-  - CS-CoreLib
-  - EmeraldEnchants2
-  - QuickMarket
-  - QuickSell
-  - RankPrefixPlus
-  - LiteXpansion
-  - MobCapturer
-  - SoundMuffler
-  - ExtraTools
-  - TranscEndence
-  - Liquid
-  - SFCalc
-  - SlimefunWarfare
-  - Slimy-Power-Suits
-  - FluffyMachines
-  - SlimyRepair
-  - InfinityExpansion
-  - FoxyMachines
-  - GlobalWarming
-  - DynaTech
-  - GeneticChickengineering
-  - HeadLimiter
-  - SlimeXpansion
-  - Barrels
-  - ClayTech
-  - FNAmplifications
-  - SMG
-  - EMC2
-  - Simple-Storage
-  - AlchimiaVitae
-  - SlimeTinker
-  - PotionExpansion
-  - FlowerPower
-  - Galactifun
-  - Element-Manipulation
-  - CrystamaeHistoria
-  - DankTech2
-  - Networks
-  - VillagerUtil
-  - MissileWarfare
-  - SensibleToolbox
+| Command | Function |
+| --- | --- |
+| `/sc status` | Show startup registration status and the failing configuration stage |
+| `/sc editor` | Open category, item and recipe GUI |
+| `/sc saveitem` | Save the item in hand, including metadata |
+| `/sc give <player> <slimefun_id> [amount]` | Give a registered item |
+| `/sc getsaveditem gui` | Browse saved item templates |
+| `/sc getsaveditem <id> <player> <amount>` | Give a saved item |
+| `/sc categories` | Inspect Slimefun category namespace identifiers |
 
-It is highly unlikely that new addons will be added to this list. If you are making a new addon or own a private addon and wish to it in SlimeCustomizer, add the following to your `plugin.yml`
-```yaml
-loadbefore:
-    - SlimeCustomizer
+Editor and modification commands require `slimecustomizer.admin` (default: OP).
+`/sc status` is intended for admins diagnosing startup.
+
+## Admin editor
+
+Shift-left/right to move a category or item up/down. Left-click an item
+for its 3×3 crafting grid; right-click a machine for its processing recipes.
+Use an item on the cursor and left-click a grid slot to copy its identity
+and stack amount without consuming the item. Save changes to YAML and
+restart the server to apply recipe changes. Guide ordering updates live.
+
+A compatible ValhallaMMO-Rewritten instance can process special 3×3
+recipes with exact metadata and **multiple units per slot**. Standard
+Slimefun enhanced crafting recipes continue to use their normal limits.
+The fixed Valhalla result multiplier is currently **x1–x16**. It does not
+modify Valhalla skill/perk multiplier logic.
+
+**Implemented:** reorder and move items, edit one crafting recipe result
+and 3×3 inputs per item, add/edit/delete two-input/two-output machine
+processing recipes, optional Valhalla grid bridge.
+
+**Not implemented yet:** multiple alternative 3×3 crafting recipes per item,
+live hot-reloading of processing recipes, full Valhalla perk multiplier
+interoperability, or general-purpose editing of other add-ons' registrations.
+
+See the [GUI guide](docs/GUI_EDITOR.md) for controls and restrictions.
+
+## Configuration and compatibility
+
+The old YAML filenames and custom Slimefun item IDs are retained:
+`categories.yml`, `items.yml`, `machines.yml`, `generators.yml`,
+`solar-generators.yml`, `mob-drops.yml` and `saveditems/`.
+The GUI additionally writes `editor-order.yml` and optional saved-item
+templates for exact item metadata.
+
+- [YAML configuration reference](docs/CONFIGURATION.md)
+- [GUI editor instructions](docs/GUI_EDITOR.md)
+- [Compatibility and test checklist](docs/COMPATIBILITY.md)
+- [Startup errors and recovery mode](docs/TROUBLESHOOTING.md)
+
+## Startup errors and recovery mode
+
+A failing `/sc editor` command with **"plugin is disabled"** does not
+identify the cause. Review the *earlier* startup log lines containing
+`[SC-STARTUP]`, `[SlimeCustomizer]` or `[Slimefun]`.
+
+This development build registers the admin editor **before** loading custom
+items. If a YAML recipe is rejected, the editor remains available in
+**RECOVERY MODE** and `/sc status` reports which file failed. Gameplay
+registration may then be incomplete: correct YAML and **restart**.
+If the mandatory Slimefun-Legacy dependency/platform preflight fails, Bukkit
+still disables the plugin and the command cannot run. Refer to
+[troubleshooting](docs/TROUBLESHOOTING.md) for the difference.
+
+## Building from source
+
+Requires JDK 25, Maven, Bash and curl:
+
+```bash
+bash scripts/install-slimefun-legacy.sh
+mvn -B clean verify
 ```
 
-Have any questions? Join the Slimefun discord at https://discord.gg/slimefun/
+The installer pins the public Slimefun-Legacy 4.1.80 JAR in the local Maven
+repository; its classes are **not** shaded into this plugin. CI checks
+Paper API 1.21.11 and 26.3 and uploads test artifacts.
+
+## Credits and license
+
+This fork continues work by **NCBPFluffyBear** and contributors. The original
+code is GPL-licensed; see [LICENSE.txt](LICENSE.txt). The current fork and
+development issue tracker are at
+[schisophrenic/SlimeCustomizer](https://github.com/schisophrenic/SlimeCustomizer).

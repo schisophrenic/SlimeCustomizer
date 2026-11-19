@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.function.BooleanSupplier;
 
 /**
  * This used to be a smol boi. Now it has grown.
@@ -47,6 +48,7 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
     public static SlimeCustomizer instance;
     public static File itemsFolder;
     private EditorMenu editorMenu;
+    private final StartupStatus startupStatus = new StartupStatus();
 
     @Override
     public void onEnable() {
@@ -70,36 +72,95 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
             return;
         }
 
-        final Metrics metrics = new Metrics(this, 9841);
+        // The admin editor and diagnostics must be available even if one
+        // malformed recipe prevents Slimefun item registration.
+        if (getCommand("slimecustomizer") == null) {
+            getLogger().severe("[SC-STARTUP] Command missing from plugin.yml; cannot start safely.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+        getCommand("slimecustomizer").setTabCompleter(new SCTabCompleter());
 
-        Config categories = new Config(this, "categories.yml");
-        Config items = new Config(this, "items.yml");
-        Config machines = new Config(this, "machines.yml");
-        Config generators = new Config(this, "generators.yml");
-        Config solarGenerators = new Config(this, "solar-generators.yml");
-        Config mobDrops = new Config(this, "mob-drops.yml");
+        try {
+            editorMenu = new EditorMenu(this);
+            Bukkit.getPluginManager().registerEvents(editorMenu, this);
+        } catch (RuntimeException | LinkageError error) {
+            getLogger().log(Level.SEVERE, "[SC-STARTUP] Unable to initialize admin editor.", error);
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
 
-        this.getCommand("slimecustomizer").setTabCompleter(new SCTabCompleter());
+        try {
+            new Metrics(this, 9841);
+        } catch (RuntimeException | LinkageError error) {
+            getLogger().log(Level.WARNING, "[SC-STARTUP] Optional bStats could not initialize.", error);
+        }
 
-        Bukkit.getConsoleSender().sendMessage("[SlimeCustomizer] " + ChatColor.BLUE + "Setting up custom stuff...");
-        if (!Categories.register(categories)) {return;}
-        if (!Items.register(items)) {return;}
-        if (!Machines.register(machines)) {return;}
-        if (!Generators.register(generators)) {return;}
-        if (!SolarGenerators.register(solarGenerators)) {return;}
-        if (!MobDrops.register(mobDrops)) {return;}
-        Bukkit.getPluginManager().registerEvents(new Events(), instance);
-        editorMenu = new EditorMenu(this);
-        Bukkit.getPluginManager().registerEvents(editorMenu, this);
-        editorMenu.initialize();
-        ValhallaBridge.start(this);
-        getLogger().info("Admin GUI available at /sc editor (permission: slimecustomizer.admin).");
+        try {
+            Config categories = new Config(this, "categories.yml");
+            Config items = new Config(this, "items.yml");
+            Config machines = new Config(this, "machines.yml");
+            Config generators = new Config(this, "generators.yml");
+            Config solarGenerators = new Config(this, "solar-generators.yml");
+            Config mobDrops = new Config(this, "mob-drops.yml");
+
+            registerStage("categories.yml", () -> Categories.register(categories));
+            registerStage("items.yml", () -> Items.register(items));
+            registerStage("machines.yml", () -> Machines.register(machines));
+            registerStage("generators.yml", () -> Generators.register(generators));
+            registerStage("solar-generators.yml", () -> SolarGenerators.register(solarGenerators));
+            registerStage("mob-drops.yml", () -> MobDrops.register(mobDrops));
+
+            startupStatus.stage("category/item ordering");
+            editorMenu.initialize();
+
+            startupStatus.stage("gameplay listeners");
+            Bukkit.getPluginManager().registerEvents(new Events(), this);
+
+            startupStatus.ready();
+            getLogger().info("[SC-STARTUP] READY: item and machine registration completed. /sc editor available.");
+            try {
+                ValhallaBridge.start(this);
+            } catch (RuntimeException | LinkageError error) {
+                getLogger().log(Level.WARNING, "[SC-STARTUP] Optional Valhalla adapter failed; native Slimefun features remain available.", error);
+            }
+        } catch (RuntimeException | LinkageError failure) {
+            startupStatus.failed(failure);
+            getLogger().log(Level.SEVERE,
+                    "[SC-STARTUP] Registration failed during " + startupStatus.stage()
+                    + ": " + startupStatus.failure()
+                    + ". Admin EDITOR RECOVERY MODE is active. Crafting/machine registration may be incomplete."
+                    + " Check /sc status, correct the configuration, and restart the server.", failure);
+            // Do not register gameplay event listeners or optional bridges here.
+            // Keep only the privileged editor available to correct YAML.
+        }
+    }
+
+    private void registerStage(String name, BooleanSupplier register) {
+        startupStatus.stage(name);
+        getLogger().info("[SC-STARTUP] Loading " + name);
+        if (!register.getAsBoolean()) {
+            throw new IllegalStateException("Registration rejected " + name
+                    + "; check earlier log entries for the offending item/recipe.");
+        }
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            Utils.send(sender, "&eUsage: /sc editor | saveitem | give <player> <id> [amount] | getsaveditem gui");
+            Utils.send(sender, "&eUsage: /sc editor | status | saveitem | give <player> <id> [amount] | getsaveditem gui");
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("status")) {
+            if (!sender.hasPermission("slimecustomizer.admin")) {
+                Utils.send(sender, "&cYou do not have permission to view startup diagnostics.");
+                return true;
+            }
+            Utils.send(sender, startupStatus.isReady()
+                    ? "&aREADY &7- SlimeCustomizer registration completed."
+                    : "&cRECOVERY MODE &7- registration failed at &e" + startupStatus.stage()
+                      + "&7: " + (startupStatus.failure() == null ? "Unknown issue" : startupStatus.failure())
+                      + ". Fix config and restart.");
             return true;
         }
         if (args[0].equalsIgnoreCase("editor")) {
@@ -108,6 +169,10 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
             } else {
                 Utils.send(sender, "&cThe editor is only available in game.");
             }
+            return true;
+        }
+        if (!startupStatus.isReady()) {
+            Utils.send(sender, "&cRegistration is incomplete. Only /sc status and /sc editor are available. Check startup logs and restart after repairs.");
             return true;
         }
         if (sender instanceof Player && args[0].equals("saveitem")) {
@@ -365,7 +430,7 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
 
     @Override
     public String getBugTrackerURL() {
-        return "https://github.com/NCBPFluffyBear/SlimeCustomizer/issues";
+        return "https://github.com/schisophrenic/SlimeCustomizer/issues";
     }
 
     @Override
