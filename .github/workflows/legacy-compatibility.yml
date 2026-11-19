@@ -33,6 +33,11 @@ jobs:
         run: bash scripts/install-slimefun-legacy.sh
       - name: Compile against Paper API ${{ matrix.paper }}
         run: mvn -B -Dpaper.api.version=${{ matrix.paper }} clean verify
+      - name: Verify startup config assets are inside the JAR
+        run: |
+          for file in categories.yml items.yml mob-drops.yml machines.yml generators.yml solar-generators.yml; do
+            jar tf target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar | grep -qx "$file"
+          done
       - name: Check runnable jar contents
         run: |
           jar tf target/SlimeCustomizer-1.1.0-legacy-SNAPSHOT.jar | grep -q '^plugin.yml$'

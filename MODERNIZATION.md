@@ -38,3 +38,13 @@ Also check that placed machine block data and inventory contents survive a resta
 
 The retired upstream BlobBuildUpdater does not run in this branch. Future
 updates should come from reviewed releases instead of automatic replacements.
+
+### Purpur 26.3 startup fix
+
+On a clean install, the plugin now creates `plugins/SlimeCustomizer/` and
+`saveditems/` before copying its six bundled YAML files. Existing YAML and
+saveditems are never overwritten. If setup fails, the plugin logs the cause and
+disables cleanly rather than registering items against empty files.
+
+Maven CI also runs file-initialization regression tests and verifies all six
+configuration resources are packaged in the runnable JAR.

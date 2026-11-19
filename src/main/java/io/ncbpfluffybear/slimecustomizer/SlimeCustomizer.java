@@ -29,7 +29,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -57,57 +56,24 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
             return;
         }
 
+        // Prepare the data directory before any default config or saved-item access.
+        // A first install on Purpur does not create plugins/SlimeCustomizer automatically.
+        try {
+            ConfigFileInstaller.install(getDataFolder().toPath(), getClass().getClassLoader());
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE,
+                    "Unable to prepare SlimeCustomizer configuration directory. Disabling plugin to avoid corrupt or empty item registrations.", e);
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         final Metrics metrics = new Metrics(this, 9841);
-
-        /* File generation */
-        final File categoriesFile = new File(getInstance().getDataFolder(), "categories.yml");
-        copyFile(categoriesFile, "categories");
-
-        final File itemsFile = new File(getInstance().getDataFolder(), "items.yml");
-        copyFile(itemsFile, "items");
-
-        final File mobDropsFile = new File(getInstance().getDataFolder(), "mob-drops.yml");
-        copyFile(mobDropsFile, "mob-drops");
-
-
-        final File machinesFile = new File(getInstance().getDataFolder(), "machines.yml");
-        copyFile(machinesFile, "machines");
-
-
-        final File generatorsFile = new File(getInstance().getDataFolder(), "generators.yml");
-        copyFile(generatorsFile, "generators");
-
-
-        final File solarGeneratorsFile = new File(getInstance().getDataFolder(), "solar-generators.yml");
-        copyFile(solarGeneratorsFile, "solar-generators");
-
-
-        /*
-        final File passiveMachinesFile = new File(getInstance().getDataFolder(), "passive-machines.yml");
-        if (!passiveMachinesFile.exists()) {
-            try {
-                Files.copy(this.getClass().getResourceAsStream("/passive-machines.yml"), passiveMachinesFile.toPath());
-            } catch (IOException e) {
-                getInstance().getLogger().log(Level.SEVERE, "Failed to copy default passive-machines.yml file", e);
-            }
-        }
-
-         */
-
-        if (!itemsFolder.exists()) {
-            try {
-                Files.createDirectory(itemsFolder.toPath());
-            } catch (IOException e) {
-                getInstance().getLogger().log(Level.SEVERE, "Failed to create saveditems folder", e);
-            }
-        }
 
         Config categories = new Config(this, "categories.yml");
         Config items = new Config(this, "items.yml");
         Config machines = new Config(this, "machines.yml");
         Config generators = new Config(this, "generators.yml");
         Config solarGenerators = new Config(this, "solar-generators.yml");
-        Config passiveMachines = new Config(this, "passive-machines.yml");
         Config mobDrops = new Config(this, "mob-drops.yml");
 
         this.getCommand("slimecustomizer").setTabCompleter(new SCTabCompleter());
@@ -374,16 +340,6 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
     private void giveItems(CommandSender s, Player p, SlimefunItem sfItem, int amount) {
         p.getInventory().addItem(new CustomItemStack(sfItem.getRecipeOutput(), amount));
         Utils.send(s, "&bYou have given " + p.getName() + " &a" + amount + " &7\"&b" + sfItem.getItemName() + "&7\"");
-    }
-
-    private void copyFile(File file, String name) {
-        if (!file.exists()) {
-            try {
-                Files.copy(this.getClass().getResourceAsStream("/"+ name + ".yml"), file.toPath());
-            } catch (IOException e) {
-                getInstance().getLogger().log(Level.SEVERE, "Failed to copy default " + name + ".yml file", e);
-            }
-        }
     }
 
     @Override
