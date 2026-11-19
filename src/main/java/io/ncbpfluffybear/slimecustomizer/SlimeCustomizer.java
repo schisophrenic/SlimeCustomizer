@@ -8,6 +8,7 @@ import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils;
 import io.ncbpfluffybear.slimecustomizer.objects.SCMenu;
 import io.ncbpfluffybear.slimecustomizer.objects.WindowsExplorerStringComparator;
 import io.ncbpfluffybear.slimecustomizer.editor.EditorMenu;
+import io.ncbpfluffybear.slimecustomizer.editor.SavedItemLibrary;
 import io.ncbpfluffybear.slimecustomizer.editor.ValhallaBridge;
 import io.ncbpfluffybear.slimecustomizer.registration.Categories;
 import io.ncbpfluffybear.slimecustomizer.registration.Generators;
@@ -148,7 +149,7 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            Utils.send(sender, "&eUsage: /sc editor | status | saveitem | give <player> <id> [amount] | getsaveditem gui");
+            Utils.send(sender, "&eUsage: /sc editor | item list | item saveitem hand | status | give <player> <id> [amount]");
             return true;
         }
         if (args[0].equalsIgnoreCase("status")) {
@@ -171,40 +172,45 @@ public class SlimeCustomizer extends JavaPlugin implements SlimefunAddon {
             }
             return true;
         }
-        if (!startupStatus.isReady()) {
-            Utils.send(sender, "&cRegistration is incomplete. Only /sc status and /sc editor are available. Check startup logs and restart after repairs.");
+        // One shared Item List browser and save implementation; older
+        // /sc saveitem and /sc getsaveditem gui syntax continue to work.
+        if (args[0].equalsIgnoreCase("item")
+                || args[0].equalsIgnoreCase("saveitem")
+                || (args[0].equalsIgnoreCase("getsaveditem") && args.length >= 2
+                    && args[1].equalsIgnoreCase("gui"))) {
+            if (!(sender instanceof Player player)) {
+                Utils.send(sender, "&cThis item editor requires an in-game player.");
+                return true;
+            }
+            if (!Utils.checkPermission(player, "slimecustomizer.admin")) return true;
+
+            boolean save = args[0].equalsIgnoreCase("saveitem")
+                    || (args[0].equalsIgnoreCase("item") && args.length >= 2
+                        && args[1].equalsIgnoreCase("saveitem")
+                        && (args.length == 2 || args[2].equalsIgnoreCase("hand")));
+            boolean list = args[0].equalsIgnoreCase("getsaveditem")
+                    || (args[0].equalsIgnoreCase("item")
+                        && (args.length == 1 || args[1].equalsIgnoreCase("list")));
+            if (save) {
+                try {
+                    String id = new SavedItemLibrary(this).saveHand(player);
+                    Utils.send(player, "&aItem saved as saveditems/" + id + ".yml. Open /sc item list to see it.");
+                } catch (IOException | IllegalArgumentException error) {
+                    Utils.send(player, "&cUnable to save held item: " + error.getMessage());
+                }
+            } else if (list) {
+                editorMenu.openItemList(player);
+            } else {
+                Utils.send(player, "&eUsage: /sc item list | /sc item saveitem hand");
+            }
             return true;
         }
-        if (sender instanceof Player && args[0].equals("saveitem")) {
-            Player p = (Player) sender;
-            if (!Utils.checkPermission(p, "slimecustomizer.admin")) {
-                return true;
-            }
-            int id = 0;
-            File itemFile = new File(getInstance().getDataFolder().getPath() + "/saveditems", id + ".yml");
-            while (itemFile.exists()) {
-                id++;
-                itemFile = new File(getInstance().getDataFolder().getPath() + "/saveditems", id + ".yml");
-            }
 
-            try {
-                if (!itemFile.createNewFile()) {
-                    Utils.send(p, "&cFailed to create saved item " + id + ". Check the server logs.");
-                    return true;
-                }
-            } catch (IOException e) {
-                getLogger().log(Level.SEVERE, "Failed to create config for saved item " + id, e);
-                Utils.send(p, "&cCould not save this item. Ask an administrator to check the log.");
-                return true;
-            }
-
-            Config itemFileConfig = new Config(this, "saveditems/" + id + ".yml");
-            itemFileConfig.setValue("item", p.getInventory().getItemInMainHand());
-            itemFileConfig.save();
-            Utils.send(p, "&eYour item has been saved to " + itemFile.getPath() + ". Please refer to " +
-                "&9" + Links.USING_CUSTOM_ITEMS);
-
-        } else if (args[0].equals("give") && args.length > 2) {
+        if (!startupStatus.isReady()) {
+            Utils.send(sender, "&cRegistration is incomplete. Only /sc status, /sc editor and /sc item are available. Check startup logs and restart.");
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("give") && args.length > 2) {
             if (sender instanceof Player && !Utils.checkPermission((Player) sender, "slimecustomizer.admin")) {
                 return true;
             }

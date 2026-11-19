@@ -37,129 +37,197 @@ public final class EditorData {
         this.orderFile = new File(plugin.getDataFolder(), "editor-order.yml");
     }
 
+    /** Key format is namespace:key, to avoid collisions between add-ons. */
+    public static String groupId(ItemGroup group) {
+        return group.getKey().toString();
+    }
+
+    public ItemGroup group(String id) {
+        for (ItemGroup group : io.github.thebusybiscuit.slimefun4.implementation.Slimefun
+                .getRegistry().getAllItemGroups()) {
+            if (groupId(group).equals(id)) return group;
+        }
+        if (id.startsWith("slimecustomizer:")) {
+            return Registry.allItemGroups.get(id.substring("slimecustomizer:".length()));
+        }
+        return Registry.allItemGroups.get(id); // historical custom key
+    }
+
+    public static boolean supportsItems(ItemGroup group) {
+        return group != null && !(group instanceof
+                io.github.thebusybiscuit.slimefun4.api.items.groups.FlexItemGroup);
+    }
+
     public List<String> categories() {
-        YamlConfiguration order = YamlConfiguration.loadConfiguration(orderFile);
-        YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+        java.util.LinkedHashSet<String> found = new java.util.LinkedHashSet<>();
+        List<String> saved = YamlConfiguration.loadConfiguration(orderFile)
+                .getStringList("category-order");
+        found.addAll(saved);
+        for (ItemGroup group : io.github.thebusybiscuit.slimefun4.implementation.Slimefun
+                .getRegistry().getAllItemGroups()) {
+            found.add(groupId(group));
+        }
+
+        // Include YAML categories even if a registration failure left them
+        // absent from the Slimefun registry. These remain repairable in GUI.
+        YamlConfiguration own = YamlConfiguration.loadConfiguration(
                 new File(plugin.getDataFolder(), "categories.yml"));
-        List<String> configured = order.getStringList("category-order");
-        java.util.LinkedHashSet<String> sorted = new java.util.LinkedHashSet<>();
-        sorted.addAll(configured);
-        // Show unregistered YAML categories too so admins can repair startup.
-        sorted.addAll(defaults.getKeys(false));
-        List<String> missing = new ArrayList<>(Registry.allItemGroups.keySet());
-        missing.sort(String.CASE_INSENSITIVE_ORDER);
-        sorted.addAll(missing);
-        return new ArrayList<>(sorted);
+        for (String key : own.getKeys(false)) found.add("slimecustomizer:" + key.toLowerCase(Locale.ROOT));
+        found.removeIf(id -> group(id) == null
+                && !(id.startsWith("slimecustomizer:") && own.isConfigurationSection(
+                id.substring("slimecustomizer:".length()))));
+        return new ArrayList<>(found);
     }
 
     public List<String> items(String categoryId) {
         java.util.LinkedHashSet<String> result = new java.util.LinkedHashSet<>();
-
-        // YAML is authoritative even when an earlier item fails registration.
-        for (String filename : ITEM_FILES) {
-            File file = new File(plugin.getDataFolder(), filename);
-            YamlConfiguration source = YamlConfiguration.loadConfiguration(file);
-            for (String id : source.getKeys(false)) {
-                if (categoryId.equals(source.getString(id + ".category"))) {
-                    result.add(id);
-                }
-            }
-        }
-
-        ItemGroup category = Registry.allItemGroups.get(categoryId);
-        if (category != null) {
-            for (SlimefunItem item : category.getItems()) {
-                if (item.getAddon() != null && item.getAddon().getName().equals(plugin.getName())) {
+        ItemGroup group = group(categoryId);
+        if (supportsItems(group)) {
+            try {
+                for (SlimefunItem item : group.getItems()) {
                     result.add(item.getId());
                 }
+            } catch (UnsupportedOperationException exception) {
+                // A custom ItemGroup may reject enumerating its items.
+                plugin.getLogger().fine("Category doesn't expose an item list: " + categoryId);
             }
         }
 
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(orderFile);
-        List<String> configured = config.getStringList("item-order." + categoryId);
-        List<String> list = new ArrayList<>(result);
-        list.sort(Comparator.comparingInt(k -> index(configured, k)));
-        return list;
+        // Show unregistered custom items in recovery mode. Do not pretend
+        // Slimefun's FlexItemGroup has any items.
+        if (group == null || supportsItems(group)) {
+            for (String filename : ITEM_FILES) {
+                YamlConfiguration source = YamlConfiguration.loadConfiguration(
+                        new File(plugin.getDataFolder(), filename));
+                for (String id : source.getKeys(false)) {
+                    String destination = source.getString(id + ".category", "");
+                    String canonical = destination.startsWith("existing:")
+                            ? destination.substring("existing:".length())
+                            : "slimecustomizer:" + destination.toLowerCase(Locale.ROOT);
+                    if (categoryId.equalsIgnoreCase(canonical)) result.add(id);
+                }
+            }
+        }
+
+        YamlConfiguration order = YamlConfiguration.loadConfiguration(orderFile);
+        List<String> configured = order.getStringList("item-order." + categoryId);
+        List<String> sorted = new ArrayList<>(result);
+        sorted.sort(Comparator.comparingInt(id -> index(configured, id)));
+        return sorted;
+    }
+
+    /** Nested groups have child groups, not items; display them as navigation. */
+    public List<String> subGroups(String parentId) {
+        ItemGroup parent = group(parentId);
+        if (!(parent instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.NestedItemGroup)) {
+            return List.of();
+        }
+        List<String> children = new ArrayList<>();
+        for (ItemGroup candidate : io.github.thebusybiscuit.slimefun4.implementation.Slimefun
+                .getRegistry().getAllItemGroups()) {
+            if (candidate instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.SubItemGroup sub
+                    && sub.getParent() == parent) children.add(groupId(sub));
+        }
+        return children;
     }
 
     private static int index(List<String> order, String id) {
-        int index = order.indexOf(id);
-        return index < 0 ? Integer.MAX_VALUE : index;
+        int i = order.indexOf(id);
+        return i < 0 ? Integer.MAX_VALUE : i;
     }
 
     public boolean moveCategory(String id, int direction) throws IOException {
-        List<String> current = categories();
-        int from = current.indexOf(id);
-        int to = from + direction;
-        if (from < 0 || to < 0 || to >= current.size()) return false;
-        java.util.Collections.swap(current, from, to);
+        List<String> list = categories();
+        int from = list.indexOf(id), to = from + direction;
+        if (from < 0 || to < 0 || to >= list.size()) return false;
+        java.util.Collections.swap(list, from, to);
         YamlConfiguration config = YamlConfiguration.loadConfiguration(orderFile);
-        config.set("category-order", current);
+        config.set("category-order", list);
         config.save(orderFile);
         applyOrder();
         return true;
     }
 
-    public boolean moveItem(String category, String id, int direction) throws IOException {
-        List<String> current = items(category);
-        int from = current.indexOf(id);
-        int to = from + direction;
+    public boolean moveItem(String categoryId, String id, int direction) throws IOException {
+        ItemGroup group = group(categoryId);
+        if (group != null && !supportsItems(group)) return false;
+        List<String> current = items(categoryId);
+        int from = current.indexOf(id), to = from + direction;
         if (from < 0 || to < 0 || to >= current.size()) return false;
         java.util.Collections.swap(current, from, to);
         YamlConfiguration config = YamlConfiguration.loadConfiguration(orderFile);
-        config.set("item-order." + category, current);
+        config.set("item-order." + categoryId, current);
         config.save(orderFile);
         applyOrder();
         return true;
     }
 
-    /** Only the categories owned by this addon are modified. */
     public void applyOrder() {
-        List<String> groups = categories();
-        boolean hasCustomOrder = YamlConfiguration.loadConfiguration(orderFile).contains("category-order");
-        // A dedicated tier range ensures that the order remains stable across
-        // Slimefun's category sort, regardless of addon key/name ordering.
-        for (int i = 0; i < groups.size(); i++) {
-            ItemGroup group = Registry.allItemGroups.get(groups.get(i));
-            if (hasCustomOrder && group != null) group.setTier(100 + i);
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(orderFile);
+        // Apply optional visual-only placements of third-party/Slimefun core
+        // items; their recipe, ID, addon and research registration are intact.
+        if (config.isConfigurationSection("category-override")) {
+            for (String itemId : config.getConfigurationSection("category-override").getKeys(false)) {
+                String targetKey = config.getString("category-override." + itemId);
+                SlimefunItem item = SlimefunItem.getById(itemId);
+                ItemGroup target = group(targetKey);
+                if (item != null && supportsItems(target) && item.getItemGroup() != target) {
+                    try {
+                        item.setItemGroup(target);
+                    } catch (RuntimeException error) {
+                        plugin.getLogger().warning("Could not move item " + itemId + ": " + error.getMessage());
+                    }
+                }
+            }
         }
-        for (String id : groups) {
-            ItemGroup group = Registry.allItemGroups.get(id);
-            if (group == null) continue;
-            List<String> customOrder = items(id);
-            group.getItems().sort(Comparator.comparingInt(
-                    item -> index(customOrder, item.getId())));
+
+        List<ItemGroup> registry = io.github.thebusybiscuit.slimefun4.implementation.Slimefun
+                .getRegistry().getAllItemGroups();
+        List<String> desiredCategories = config.getStringList("category-order");
+        if (!desiredCategories.isEmpty()) {
+            // Sorting the actual registry list, not changing built-in Slimefun
+            // tiers, preserves the original category keys and relationships.
+            registry.sort(Comparator.comparingInt(g -> index(desiredCategories, groupId(g))));
+        }
+
+        for (ItemGroup group : registry) {
+            if (!supportsItems(group)) continue; // FlexItemGroup#getItems throws.
+            String key = groupId(group);
+            List<String> order = config.getStringList("item-order." + key);
+            if (!order.isEmpty()) {
+                try {
+                    group.getItems().sort(Comparator.comparingInt(i -> index(order, i.getId())));
+                } catch (UnsupportedOperationException exception) {
+                    plugin.getLogger().fine("Item ordering not supported by " + key);
+                }
+            }
         }
     }
 
-    public boolean moveItemToCategory(String id, String category) throws IOException {
-        File file = sourceFile(id);
-        if (file == null) return false;
+    public boolean moveItemToCategory(String itemId, String categoryId) throws IOException {
+        ItemGroup target = group(categoryId);
+        if (!supportsItems(target)) return false;
+        SlimefunItem item = SlimefunItem.getById(itemId);
+        File source = sourceFile(itemId);
 
-        // Preserve custom item IDs. Never move someone else's Slimefun item.
-        SlimefunItem registered = SlimefunItem.getById(id);
-        if (registered != null && (registered.getAddon() == null
-                || !registered.getAddon().getName().equals(plugin.getName()))) return false;
+        if (source != null) {
+            // Save SlimeCustomizer-owned changes to the original item YAML.
+            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(source);
+            String value = "slimecustomizer".equals(target.getKey().getNamespace())
+                    ? target.getKey().getKey()
+                    : "existing:" + groupId(target);
+            yaml.set(itemId + ".category", value);
+            yaml.save(source);
+        } else if (item != null) {
+            // Third-party item placement belongs to editor-order.yml, not its
+            // owning addon's config. Only visual location is overridden.
+            YamlConfiguration order = YamlConfiguration.loadConfiguration(orderFile);
+            order.set("category-override." + itemId, categoryId);
+            order.save(orderFile);
+        } else return false;
 
-        YamlConfiguration categories = YamlConfiguration.loadConfiguration(
-                new File(plugin.getDataFolder(), "categories.yml"));
-        if (!categories.isConfigurationSection(category)
-                || "nested".equalsIgnoreCase(categories.getString(category + ".type"))) {
-            return false;
-        }
-
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-        yaml.set(id + ".category", category);
-        yaml.save(file);
-
-        ItemGroup target = Registry.allItemGroups.get(category);
-        if (registered != null && target != null
-                && !(target instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.NestedItemGroup)) {
-            registered.setItemGroup(target);
-            applyOrder();
-        }
-        // If registration failed before this item/group was loaded, the saved
-        // YAML takes effect on restart when registration succeeds.
+        if (item != null && item.getItemGroup() != target) item.setItemGroup(target);
+        applyOrder();
         return true;
     }
 

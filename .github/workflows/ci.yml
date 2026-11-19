@@ -42,7 +42,7 @@ jobs:
         run: mvn -B -Dpaper.api.version=${{ matrix.paper }} clean verify
       - name: Verify runnable JAR resources and editor classes
         run: |
-          JAR="target/SlimeCustomizer-1.1.1-gui-recovery-SNAPSHOT.jar"
+          JAR="target/SlimeCustomizer-1.1.2-category-editor-SNAPSHOT.jar"
           test -s "$JAR"
           for path in plugin.yml slimefun-compatibility.json categories.yml items.yml machines.yml generators.yml solar-generators.yml mob-drops.yml \
             io/ncbpfluffybear/slimecustomizer/StartupStatus.class \
@@ -53,6 +53,6 @@ jobs:
       - name: Upload runnable test JAR
         uses: actions/upload-artifact@v4
         with:
-          name: SlimeCustomizer-1.1.1-GUI-Recovery-TEST-${{ matrix.paper }}
-          path: target/SlimeCustomizer-1.1.1-gui-recovery-SNAPSHOT.jar
+          name: SlimeCustomizer-1.1.2-Category-Editor-TEST-${{ matrix.paper }}
+          path: target/SlimeCustomizer-1.1.2-category-editor-SNAPSHOT.jar
           retention-days: 7

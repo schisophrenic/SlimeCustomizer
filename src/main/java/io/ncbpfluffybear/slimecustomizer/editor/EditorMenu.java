@@ -38,19 +38,33 @@ public final class EditorMenu implements Listener {
     private static final int[] PROCESS_INPUT = {11, 12};
     private static final int[] PROCESS_OUTPUT = {24, 25};
     private static final int PAGE_SIZE = 45;
+    private static final List<String> CRAFTING_STATIONS = List.of(
+            "ENHANCED_CRAFTING_TABLE", "MAGIC_WORKBENCH", "ARMOR_FORGE",
+            "PRESSURE_CHAMBER", "COMPRESSOR", "SMELTERY", "ORE_CRUSHER",
+            "GRIND_STONE", "NONE");
 
-    private enum Page { CATEGORIES, ITEMS, MOVE, CRAFT, MACHINE_LIST, PROCESS }
+    private enum Page { CATEGORIES, ITEMS, MOVE, CRAFT, MACHINE_LIST, PROCESS, ITEM_LIST, EXTERNAL_ITEM }
 
     private final SlimeCustomizer plugin;
     private final EditorData data;
+    private final SavedItemLibrary savedItems;
 
     public EditorMenu(SlimeCustomizer plugin) {
         this.plugin = plugin;
         this.data = new EditorData(plugin);
+        this.savedItems = new SavedItemLibrary(plugin);
     }
 
     public void initialize() {
         data.applyOrder();
+    }
+
+    public void openItemList(Player player) {
+        if (!player.hasPermission("slimecustomizer.admin")) {
+            Utils.send(player, "&cYou need slimecustomizer.admin.");
+            return;
+        }
+        show(new Session(player), Page.ITEM_LIST);
     }
 
     public void open(Player player) {
@@ -110,6 +124,8 @@ public final class EditorMenu implements Listener {
             case CRAFT -> "Crafting: " + trim(s.itemId, 18);
             case MACHINE_LIST -> "Machine recipes: " + trim(s.itemId, 14);
             case PROCESS -> "Processing: " + trim(s.machineRecipeId, 18);
+            case ITEM_LIST -> "SC Editor: Item List";
+            case EXTERNAL_ITEM -> "Slimefun Item: " + trim(s.itemId, 16);
         };
         s.inventory = Bukkit.createInventory(s, 54, title);
         render(s);
@@ -123,22 +139,39 @@ public final class EditorMenu implements Listener {
             case CATEGORIES -> {
                 List<String> categories = data.categories();
                 renderList(s, categories, true);
-                inv.setItem(49, button(Material.BOOK, "&eCategory ordering",
-                        "&7Shift-left/right on a category", "&7to move it up/down in the Slimefun Guide.",
-                        "&7Only SlimeCustomizer categories are changed."));
+                inv.setItem(49, button(Material.BOOK, "&eSlimefun category organizer",
+                        "&7Includes Slimefun core, addons and custom categories.",
+                        "&7Shift-left/right: move category up/down.",
+                        "&7Ordering is saved without changing tier or item ID."));
+                inv.setItem(47, button(Material.CHEST, "&aItem List",
+                        "&7Browse saved custom item templates.",
+                        "&7Click to give one, or save the item in hand.",
+                        "&7Also available through /sc item list."));
             }
             case ITEMS -> {
-                renderList(s, data.items(s.category), false);
-                inv.setItem(49, button(Material.BOOK, "&eItem order",
-                        "&7Left: crafting recipe", "&7Right: machine processing recipes",
-                        "&7Shift-left/right: move item up/down", "&7Moving items to another category is",
-                        "&7available inside the crafting editor."));
+                List<String> entries = categoryEntries(s.category);
+                renderList(s, entries, false);
+                ItemGroup group = data.group(s.category);
+                if (group != null && !EditorData.supportsItems(group)
+                        && !(group instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.NestedItemGroup)) {
+                    inv.setItem(49, button(Material.BARRIER, "&eSpecial Slimefun category",
+                            "&7This category renders its own custom GUI.",
+                            "&7It has no normal item list to rearrange.",
+                            "&7You can still change its category order."));
+                } else {
+                    inv.setItem(49, button(Material.BOOK, "&eItem organizer",
+                            "&7Shift-left/right: reorder items in this category.",
+                            "&7Left: edit your item or inspect a Slimefun item.",
+                            "&7Right: machine recipes, when available.",
+                            "&7Use the item view to move items across categories."));
+                }
             }
             case MOVE -> {
                 renderList(s, data.categories(), true);
                 inv.setItem(49, button(Material.CHEST, "&eChoose a destination",
-                        "&7Click a custom category to move this item there.",
-                        "&7Nested parent categories are excluded."));
+                        "&7Click any category that can contain normal items.",
+                        "&7Slimefun core and addon categories are supported.",
+                        "&7Flex/nested container groups cannot receive items."));
             }
             case MACHINE_LIST -> {
                 YamlConfiguration yaml = data.load(s.itemId);
@@ -161,32 +194,102 @@ public final class EditorMenu implements Listener {
             }
             case CRAFT -> renderCraft(s);
             case PROCESS -> renderProcess(s);
+            case ITEM_LIST -> renderItemList(s);
+            case EXTERNAL_ITEM -> renderExternalItem(s);
         }
-        if (s.page != Page.CATEGORIES && s.page != Page.CRAFT && s.page != Page.PROCESS) {
+        if (s.page != Page.CATEGORIES && s.page != Page.CRAFT && s.page != Page.PROCESS
+                && s.page != Page.EXTERNAL_ITEM) {
             inv.setItem(46, button(Material.ARROW, "&eBack"));
         }
+    }
+
+    private List<String> categoryEntries(String id) {
+        ItemGroup group = data.group(id);
+        if (group instanceof io.github.thebusybiscuit.slimefun4.api.items.groups.NestedItemGroup) {
+            List<String> children = new ArrayList<>();
+            for (String child : data.subGroups(id)) children.add("group:" + child);
+            return children;
+        }
+        return data.items(id);
     }
 
     private void renderList(Session s, List<String> list, boolean categories) {
         int start = s.pageNumber * PAGE_SIZE;
         for (int i = start; i < Math.min(list.size(), start + PAGE_SIZE); i++) {
             String id = list.get(i);
-            ItemStack base;
-            if (categories) {
-                ItemGroup group = Registry.allItemGroups.get(id);
-                base = group == null ? null : group.getItem(s.player);
+            boolean child = id.startsWith("group:");
+            ItemStack base = null;
+            if (categories || child) {
+                ItemGroup group = data.group(child ? id.substring(6) : id);
+                if (group != null) {
+                    try {
+                        base = group.getItem(s.player);
+                    } catch (RuntimeException | LinkageError ignored) {
+                        base = null; // Bad add-on icon must never crash the admin editor.
+                    }
+                }
             } else {
                 SlimefunItem sf = SlimefunItem.getById(id);
                 base = sf == null ? null : sf.getItem();
             }
             s.inventory.setItem(i - start, button(base == null ? new ItemStack(Material.PAPER) : base,
-                    "&e" + id, categories
-                            ? "&7Left: open category   Shift-left/right: reorder"
-                            : "&7Left: edit crafting   Right: machine processes",
-                    categories ? "&7Right-click: open category"
+                    "&e" + (child ? id.substring(6) : id),
+                    categories || child ? "&7Open category  |  Shift-left/right: reorder"
+                            : "&7Left: edit or inspect  |  Right: machine recipes",
+                    categories || child ? "&7Normal and third-party groups are listed."
                             : "&7Shift-left/right: reorder this item"));
         }
         navigation(s, list.size());
+    }
+
+    private void renderItemList(Session s) {
+        List<String> ids = savedItems.list();
+        int start = s.pageNumber * PAGE_SIZE;
+        for (int i = start; i < Math.min(ids.size(), start + PAGE_SIZE); i++) {
+            String id = ids.get(i);
+            ItemStack sample = savedItems.get(id);
+            s.inventory.setItem(i - start, button(sample == null ? new ItemStack(Material.BARRIER) : sample,
+                    "&eSaved item: " + id,
+                    "&7Left-click: give one template item.",
+                    "&7Stored under saveditems/" + id + ".yml",
+                    "&7Use /sc item saveitem hand to save a new one."));
+        }
+        navigation(s, ids.size());
+        s.inventory.setItem(45, button(Material.LIME_DYE, "&aSave item in hand",
+                "&7Creates a new saved-item template.",
+                "&7Copies metadata, PDC and current stack amount.",
+                "&7Does not consume the held item."));
+        s.inventory.setItem(49, button(Material.BOOK, "&eItem List",
+                "&7Your saved templates, including GUI ingredients.",
+                "&7Click a template to obtain one copy."));
+    }
+
+    private void renderExternalItem(Session s) {
+        SlimefunItem item = SlimefunItem.getById(s.itemId);
+        if (item != null) {
+            ItemStack[] recipe = item.getRecipe();
+            int count = Math.min(recipe.length, CRAFT_GRID.length);
+            for (int i = 0; i < count; i++) {
+                s.inventory.setItem(CRAFT_GRID[i], preview(recipe[i], "&7Ingredient " + (i + 1)));
+            }
+            s.inventory.setItem(24, preview(item.getRecipeOutput(), "&aRegistered output"));
+        }
+        s.inventory.setItem(39, button(Material.CHEST, "&eMove to another category",
+                "&7Changes display category only.",
+                "&7Recipe and registered item ownership stay intact.",
+                "&7Saved in editor-order.yml for restarts."));
+        s.inventory.setItem(43, button(Material.CRAFTING_TABLE,
+                "&eCrafting machine: " + (d.valhalla ? "VALHALLA_GRID" : d.nativeRecipeType),
+                "&7Left-click: next Slimefun machine.",
+                "&7Right-click: previous Slimefun machine.",
+                "&7Only valid supported crafting stations are shown.",
+                "&7Changing it overrides the old crafting-recipe-type.",
+                "&7For grid >1 per slot, toggle Valhalla mode."));
+        s.inventory.setItem(45, button(Material.ARROW, "&eBack to items"));
+        s.inventory.setItem(49, button(Material.BOOK, "&eRead-only Slimefun recipe",
+                "&7This item belongs to another plugin.",
+                "&7Use its own editor to change ingredients.",
+                "&7You may reorder or move it in the guide."));
     }
 
     private void navigation(Session s, int size) {
@@ -205,7 +308,7 @@ public final class EditorMenu implements Listener {
         }
         s.inventory.setItem(24, preview(d.outputs[0], "&aResult"));
         s.inventory.setItem(39, button(Material.CHEST, "&eMove to another category",
-                "&7Choose a SlimeCustomizer category."));
+                "&7Choose Slimefun core or addon categories too."));
         if (data.isMachine(s.itemId)) {
             s.inventory.setItem(40, button(Material.FURNACE, "&eMachine process recipes",
                     "&7Edit/add processing recipes for this machine."));
@@ -309,8 +412,10 @@ public final class EditorMenu implements Listener {
                 case CRAFT -> craftClick(s, slot, click, event.getCursor());
                 case MACHINE_LIST -> machineListClick(s, slot);
                 case PROCESS -> processClick(s, slot, click, event.getCursor());
+                case ITEM_LIST -> itemListClick(s, slot);
+                case EXTERNAL_ITEM -> externalClick(s, slot);
             }
-        } catch (IOException | IllegalArgumentException error) {
+        } catch (IOException | RuntimeException error) {
             plugin.getLogger().log(Level.WARNING, "Editor action failed", error);
             Utils.send(s.player, "&cEditor action failed: " + error.getMessage());
         }
@@ -325,6 +430,11 @@ public final class EditorMenu implements Listener {
     }
 
     private void categoriesClick(Session s, int slot, ClickType click) throws IOException {
+        if (slot == 47) {
+            s.pageNumber = 0;
+            show(s, Page.ITEM_LIST);
+            return;
+        }
         if (pageButton(s, slot, data.categories().size())) return;
         List<String> ids = data.categories();
         int selected = s.pageNumber * PAGE_SIZE + slot;
@@ -346,19 +456,29 @@ public final class EditorMenu implements Listener {
             show(s, Page.CATEGORIES);
             return;
         }
-        if (pageButton(s, slot, data.items(s.category).size())) return;
-        List<String> items = data.items(s.category);
+        if (pageButton(s, slot, categoryEntries(s.category).size())) return;
+        List<String> items = categoryEntries(s.category);
         int selected = s.pageNumber * PAGE_SIZE + slot;
         if (selected < 0 || selected >= items.size() || slot >= PAGE_SIZE) return;
         String id = items.get(selected);
+        if (id.startsWith("group:")) {
+            s.category = id.substring(6);
+            s.pageNumber = 0;
+            show(s, Page.ITEMS);
+            return;
+        }
         if (click == ClickType.SHIFT_LEFT || click == ClickType.SHIFT_RIGHT) {
-            data.moveItem(s.category, id, click == ClickType.SHIFT_LEFT ? -1 : 1);
+            if (!data.moveItem(s.category, id, click == ClickType.SHIFT_LEFT ? -1 : 1)) {
+                Utils.send(s.player, "&cThis item cannot move further or its group is read-only.");
+            }
             render(s);
             return;
         }
         s.itemId = id;
         s.pageNumber = 0;
-        if (click.isRightClick() && data.isMachine(id)) {
+        if (data.sourceFile(id) == null) {
+            show(s, Page.EXTERNAL_ITEM);
+        } else if (click.isRightClick() && data.isMachine(id)) {
             show(s, Page.MACHINE_LIST);
         } else {
             s.draft = craftingDraft(id);
@@ -368,8 +488,11 @@ public final class EditorMenu implements Listener {
 
     private void moveClick(Session s, int slot) throws IOException {
         if (slot == 46) {
-            s.draft = craftingDraft(s.itemId);
-            show(s, Page.CRAFT);
+            if (data.sourceFile(s.itemId) == null) show(s, Page.EXTERNAL_ITEM);
+            else {
+                s.draft = craftingDraft(s.itemId);
+                show(s, Page.CRAFT);
+            }
             return;
         }
         List<String> groups = data.categories();
@@ -382,8 +505,48 @@ public final class EditorMenu implements Listener {
         } else {
             Utils.send(s.player, "&cThis category cannot receive items.");
         }
-        s.draft = craftingDraft(s.itemId);
-        show(s, Page.CRAFT);
+        if (data.sourceFile(s.itemId) == null) show(s, Page.EXTERNAL_ITEM);
+        else {
+            s.draft = craftingDraft(s.itemId);
+            show(s, Page.CRAFT);
+        }
+    }
+
+    private void externalClick(Session s, int slot) {
+        if (slot == 45) show(s, Page.ITEMS);
+        else if (slot == 39) {
+            s.pageNumber = 0;
+            show(s, Page.MOVE);
+        }
+    }
+
+    private void itemListClick(Session s, int slot) throws IOException {
+        if (slot == 46) {
+            s.pageNumber = 0;
+            show(s, Page.CATEGORIES);
+            return;
+        }
+        if (slot == 45) {
+            String id = savedItems.saveHand(s.player);
+            Utils.send(s.player, "&aSaved item template as " + id + ".yml (not consumed).");
+            render(s);
+            return;
+        }
+        List<String> ids = savedItems.list();
+        if (pageButton(s, slot, ids.size())) return;
+        int index = s.pageNumber * PAGE_SIZE + slot;
+        if (slot < 0 || slot >= PAGE_SIZE || index >= ids.size()) return;
+        ItemStack saved = savedItems.get(ids.get(index));
+        if (saved == null || saved.getType().isAir()) {
+            Utils.send(s.player, "&cSaved item template is empty or invalid.");
+            return;
+        }
+        ItemStack item = saved.clone();
+        item.setAmount(1);
+        for (ItemStack left : s.player.getInventory().addItem(item).values()) {
+            s.player.getWorld().dropItemNaturally(s.player.getLocation(), left);
+        }
+        Utils.send(s.player, "&aGiven saved item: " + ids.get(index));
     }
 
     private void machineListClick(Session s, int slot) {
@@ -455,6 +618,14 @@ public final class EditorMenu implements Listener {
             render(s);
         } else if (slot == 41 && isRegularItem(s.itemId)) {
             s.draft.multiplier = clamp(s.draft.multiplier + (click.isShiftClick() ? -1 : 1), 1, 16);
+            s.draft.modified = true;
+            render(s);
+        } else if (slot == 43) {
+            int from = CRAFTING_STATIONS.indexOf(s.draft.nativeRecipeType);
+            int direction = click.isRightClick() ? -1 : 1;
+            s.draft.nativeRecipeType = CRAFTING_STATIONS.get(
+                    Math.floorMod((from < 0 ? 0 : from) + direction, CRAFTING_STATIONS.size()));
+            s.draft.valhalla = false;
             s.draft.modified = true;
             render(s);
         } else if (slot == 49) {
@@ -614,10 +785,10 @@ public final class EditorMenu implements Listener {
             data.writeIngredient(yaml, path + "." + (i + 1), draft.inputs[i]);
         }
         yaml.set(s.itemId + ".recipe-output", draft.outputs[0]);
+        yaml.set(s.itemId + ".crafting-recipe-type",
+                draft.valhalla && isRegularItem(s.itemId) ? "VALHALLA_GRID" : draft.nativeRecipeType);
+        yaml.set(s.itemId + ".previous-recipe-type", draft.nativeRecipeType);
         if (isRegularItem(s.itemId)) {
-            yaml.set(s.itemId + ".crafting-recipe-type",
-                    draft.valhalla ? "VALHALLA_GRID" : draft.nativeRecipeType);
-            yaml.set(s.itemId + ".previous-recipe-type", draft.nativeRecipeType);
             yaml.set(s.itemId + ".valhalla-output-multiplier", draft.multiplier);
         }
         data.save(s.itemId, yaml);

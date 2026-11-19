@@ -20,17 +20,24 @@ Do not install the legacy/original Slimefun4 core alongside Slimefun-Legacy.
    `saveditems` folder are created.
 2. Run `/sc status` and confirm **READY**. For **RECOVERY MODE**, examine
    the earliest `[SC-STARTUP]` error.
-3. Open `/sc editor`. Browse categories and items, then reorder both.
-4. Save a changed crafting result and a new machine processing recipe;
+3. Open `/sc editor`. Browse **normal Slimefun core** categories and addon
+   categories, then reorder them and their items. Test a `FlexItemGroup`
+   category to ensure it displays a non-editable warning rather than throwing.
+   Test a nested category's subgroup navigation.
+4. Cycle the **Crafting machine** selector, save a recipe, restart, and
+   verify it uses the selected Slimefun multiblock machine.
+5. Open `/sc item list`, save an item with `/sc item saveitem hand`, and
+   confirm full metadata persists after a restart.
+6. Save a changed crafting result and a new machine processing recipe;
    restart and verify the new result and processing behavior.
-5. Save a custom item with metadata; ensure that recognition and stacks
+7. Save a custom item with metadata; ensure that recognition and stacks
    remain correct after restart.
-6. Test missing ingredients, exact Slimefun/Valhalla items, four units in
+8. Test missing ingredients, exact Slimefun/Valhalla items, four units in
    one slot (Valhalla grid), insufficient quantities, shift-click and
    output multiplier. Verify no duplication or free crafting.
-7. Test generators, solar production, mob drops, placed machines, inventories
+9. Test generators, solar production, mob drops, placed machines, inventories
    and saved item migration.
-8. Test with ValhallaMMO absent. Basic Slimefun functionality must continue;
+10. Test with ValhallaMMO absent. Basic Slimefun functionality must continue;
    `VALHALLA_GRID` recipes should remain unavailable and report why.
 
 These items have **not all passed in-game yet**. A successful compile alone

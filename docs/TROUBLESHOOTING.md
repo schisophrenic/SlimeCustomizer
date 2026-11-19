@@ -53,3 +53,13 @@ will **never be overwritten** by the installer.
 - `/sc status` output if available.
 - Relevant config section with sensitive keys/paths removed.
 - Steps to reproduce with a backed-up test world.
+
+## Clicking an addon category throws `A FlexItemGroup has no items!`
+
+Slimefun's FlexItemGroup and nested containers are custom category
+interfaces, not normal inventories. Earlier GUI tests called `getItems()`
+on them, which throws. The category organizer now detects these classes:
+it shows a category row without requesting a nonexistent item list and lets
+you browse nested child groups where possible. Use the owning addon's UI for
+its custom contents. The ordinary Slimefun categories and their items remain
+reorderable.

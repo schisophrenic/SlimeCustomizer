@@ -1,12 +1,17 @@
 # In-game GUI editor
 
 Open `/sc editor` as an operator or with `slimecustomizer.admin`.
-This editor is only for items/categories owned by SlimeCustomizer, not every
-third-party Slimefun item.
+It includes **normal Slimefun core, third-party addon and custom categories**.
+Normal categories and their items can be rearranged. Special `FlexItemGroup`
+categories are visible, but their bespoke inventories do not expose a standard
+item list and cannot be reorganized at the item level.
 
 ## Category and item order
 
 - Open a category by left- or right-clicking its icon.
+- Core Slimefun categories are now included, identified by namespaced keys.
+- Click a nested category to browse subgroups; these are not ordinary items.
+- Use **Item List** in the main editor or `/sc item list` for saved templates.
 - Shift-left a category to move it up; shift-right to move it down.
 - Within a category, shift-left/right an item to reorder it.
 - Open its crafting grid and select **Move to another category** to move it.
@@ -18,6 +23,11 @@ A category/item may appear with a generic icon in **recovery mode** if it
 exists in YAML but did not finish Slimefun registration.
 
 ## Crafting grid and result
+
+Choose the crafting machine at the **Crafting machine** button in the
+recipe editor. Left-click advances, right-click goes backwards through
+Enhanced Crafting Table, Magic Workbench, Armor Forge, Pressure Chamber,
+Compressor, Smeltery, Ore Crusher, Grind Stone, and None.
 
 The 3×3 layout contains **ghost previews**, not real inventory items:
 
@@ -58,6 +68,15 @@ perk effects or invoke a second recipe processing transaction.
 **Both dependencies must be compatible** to use this mode. Test normal
 click/shift-click, insufficient amounts, custom items and output counts on
 the test server before release.
+
+## Item List and item saving
+
+Open `/sc item list` to browse saved item templates. Left-click gives one
+admin copy of the selected template. Click **Save item in hand** or run
+`/sc item saveitem hand` to save the held item to a new numbered
+`saveditems/<id>.yml` file. Its complete ItemStack metadata is preserved and
+the hand item is not consumed. The old `/sc saveitem` and
+`/sc getsaveditem gui` commands also open the same workflows.
 
 ## Machine processing editor
 

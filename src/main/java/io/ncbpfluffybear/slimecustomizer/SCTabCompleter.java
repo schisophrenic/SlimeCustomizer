@@ -36,11 +36,19 @@ public class SCTabCompleter implements TabCompleter {
 
                 if (player.hasPermission("slimecustomizer.admin")) {
                     options.add("editor");
+                    options.add("item");
                     options.add("status");
                     options.add("saveitem");
                     options.add("give");
                     options.add("getsaveditem");
                     options.add("categories");
+                }
+            } else if (args[0].equalsIgnoreCase("item") && player.hasPermission("slimecustomizer.admin")) {
+                if (args.length == 2) {
+                    options.add("list");
+                    options.add("saveitem");
+                } else if (args.length == 3 && args[1].equalsIgnoreCase("saveitem")) {
+                    options.add("hand");
                 }
             } else if (args[0].equals("give") && player.hasPermission("slimecustomizer.admin")) {
                 switch (args.length) {

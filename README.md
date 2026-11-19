@@ -31,8 +31,15 @@ its compatible grid crafting API and will not craft without it.
 
 ## Commands
 
+The **Item List** is reachable from the main editor or with
+`/sc item list`. Run `/sc item saveitem hand` to save the held item,
+including custom metadata, without consuming it. `/sc saveitem` and
+`/sc getsaveditem gui` remain as compatibility commands.
+
 | Command | Function |
 | --- | --- |
+| `/sc item list` | Browse and obtain saved item templates |
+| `/sc item saveitem hand` | Save held item as a template without consuming it |
 | `/sc status` | Show startup registration status and the failing configuration stage |
 | `/sc editor` | Open category, item and recipe GUI |
 | `/sc saveitem` | Save the item in hand, including metadata |
@@ -46,8 +53,14 @@ Editor and modification commands require `slimecustomizer.admin` (default: OP).
 
 ## Admin editor
 
+The organizer includes normal Slimefun core, addon and SlimeCustomizer
+categories. FlexItemGroups have custom inventory contents that cannot be
+reordered as a flat list. Nested category containers expose subgroups instead.
 Shift-left/right to move a category or item up/down. Left-click an item
 for its 3×3 crafting grid; right-click a machine for its processing recipes.
+Select the desired crafting station using the **Crafting machine** selector
+(Enhanced Crafting Table, Magic Workbench, Armor Forge, Pressure Chamber,
+Compressor, Smeltery, Ore Crusher, Grind Stone or None).
 Use an item on the cursor and left-click a grid slot to copy its identity
 and stack amount without consuming the item. Save changes to YAML and
 restart the server to apply recipe changes. Guide ordering updates live.
